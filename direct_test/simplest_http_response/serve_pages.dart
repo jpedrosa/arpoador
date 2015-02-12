@@ -14,16 +14,11 @@ respond(socket, buffer) {
 }
 
 handleServerSocket(socket) {
-  var buffer;
-  while (true) {
-    buffer = socket.readNext();
-    if (buffer == null) {
-      break;
-    }
+  var buffer = socket.readNext();
+  if (buffer != null) {
     respond(socket, buffer);
-    socket.close();
-    break;
   }
+  socket.close();
 }
 
 main() {
