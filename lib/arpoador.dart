@@ -34,7 +34,8 @@ class Request {
 
 class Response {
 
-  var socket, statusCode = 200, headerMap = {}, responseContent = "";
+  var socket, statusCode = 200, headerMap = const {"Content-Type": "text/html"},
+    responseContent = "";
 
   Response(this.socket);
 
@@ -47,12 +48,19 @@ class Response {
     this.responseContent = responseContent;
   }
 
+  concatHeaderMap() {
+    var s = "", kk = headerMap.keys, k;
+    for (k in kk) {
+      s += "${k}: ${headerMap[k]}\n";
+    }
+    return s;
+  }
+
   doFlush() {
     var body = responseContent,
-    header = "HTTP/1.1 ${statusCode} ${statusCodeList[statusCode]}"
-        "\nContent-Type: text/html\nContent-Length: ",
-      s = "${header}${body.length}\n\n${body}";
-    var len = s.length, i, a = new Uint8List(len);
+      s = "HTTP/1.1 ${statusCode} ${statusCodeList[statusCode]}"
+        "\n${concatHeaderMap()}Content-Length: ${body.length}\n\n${body}",
+      len = s.length, i, a = new Uint8List(len);
     for (i = 0; i < len; i++) {
       a[i] = s.codeUnitAt(i);
     }
