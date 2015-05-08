@@ -6,6 +6,8 @@ import 'dart:typed_data';
 
 class Momentum {
 
+  /// For now, the handler callback should be a static method or function.
+  /// It seems that instance methods don't work as handler callbacks yet.
   static listen({port: 8777, address: "127.0.0.1",
       handler(socket)}) {
     var server = new ServerSocket(address, port);
