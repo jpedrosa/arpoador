@@ -2,6 +2,8 @@ library arpoador;
 
 import 'dart:io';
 import 'dart:typed_data';
+import "lang.dart";
+import "header_parser.dart";
 
 
 class Momentum {
@@ -16,10 +18,10 @@ class Momentum {
   }
 
   static handle(socket, fn(req, res)) {
-    var buffer = socket.readNext();
-    if (buffer != null) {
+    var request = new Request(socket);
+    if (request.ready) {
       var response = new Response(socket);
-      fn(new Request(), response);
+      fn(request, response);
       response.doFlush();
     }
     socket.close();
@@ -30,7 +32,47 @@ class Momentum {
 
 class Request {
 
+  var _header;
+
+  Request(socket) {
+    var headerParser = new HeaderParser();
+    var buffer = socket.readNext();
+    if (buffer != null) {
+      try {
+        headerParser.parse(buffer.asUint8List());
+        _header = headerParser.header;
+      } catch (e) {
+        // ignore.
+      }
+      /*print('buffer: ${buffer}');
+      print('length: ${buffer.lengthInBytes}');
+      print(buffer.asUint8List());
+      print(new String.fromCharCodes(buffer.asUint8List(), 0, null));*/
+      //p(toString());
+    }
+  }
+
+  get method => _header.method;
+
+  get uri => _header.uri;
+
+  get httpVersion => _header.httpVersion;
+
+  get headerMap => _header.headerMap;
+
+  operator [](k) => _header[k];
+
+  get ready => _header != null;
+
+  toString() {
+    return 'Request(method: ${inspect(method)}, '
+      'uri: ${inspect(uri)}, '
+      'httpVersion: ${inspect(httpVersion)}, '
+      'headerMap: ${inspect(headerMap)})';
+  }
+
 }
+
 
 class Response {
 
