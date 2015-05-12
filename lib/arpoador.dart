@@ -36,15 +36,18 @@ class Request {
 
   Request(socket) {
     var headerParser = new HeaderParser();
-    var buffer = socket.readNext();
-    if (buffer != null) {
-      try {
-        headerParser.parse(buffer.asUint8List());
-        _header = headerParser.header;
-      } catch (e) {
-        // ignore.
+    var buffer;
+    do {
+      buffer = socket.readNext();
+      if (buffer != null) {
+        try {
+          headerParser.parse(buffer.asUint8List());
+          _header = headerParser.header;
+        } catch (e) {
+          break;
+        }
       }
-    }
+    } while (buffer != null && !headerParser.done);
   }
 
   get method => _header.method;

@@ -26,16 +26,14 @@ class HeaderParser {
 
   var _stream, _entryParser, header, _index = 0, _length = 0,
     _linedUpParser, _tokenIndex = -1, _keyToken, _tokenBuffer,
-    _tokenBufferEnd = 0;
+    _tokenBufferEnd = 0, _done = false;
 
   HeaderParser() {
-    reset();
-  }
-
-  reset() {
     header = new Header();
     _entryParser = inMethod;
   }
+
+  get done => _done;
 
   addToTokenBuffer(a, startIndex, endIndex) {
     var alen = a.length, b = _tokenBuffer, i, j, tbe = _tokenBufferEnd;
@@ -235,6 +233,7 @@ class HeaderParser {
       _index = i + 1;
       _entryParser = inKeyStarted;
     } else if (c == 10) { // \n
+      _done = true;
       _index = _length; // Header exit.
     } else if (c == 13) { // \r
       _index++;
@@ -246,6 +245,7 @@ class HeaderParser {
 
   inHeaderExit() {
     if (_stream[_index] == 10) { // \n
+      _done = true;
       _index = _length;
     } else {
       throw "Invalid input. Could not parse the Line Feed (/n).";
