@@ -44,11 +44,6 @@ class Request {
       } catch (e) {
         // ignore.
       }
-      /*print('buffer: ${buffer}');
-      print('length: ${buffer.lengthInBytes}');
-      print(buffer.asUint8List());
-      print(new String.fromCharCodes(buffer.asUint8List(), 0, null));*/
-      //p(toString());
     }
   }
 

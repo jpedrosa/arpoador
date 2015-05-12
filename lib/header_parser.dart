@@ -25,23 +25,66 @@ class Header {
 class HeaderParser {
 
   var _stream, _entryParser, header, _index = 0, _length = 0,
-    _linedUpParser, _tokenIndex = 0, _keyToken;
+    _linedUpParser, _tokenIndex = -1, _keyToken, _tokenBuffer,
+    _tokenBufferEnd = 0;
+
+  HeaderParser() {
+    reset();
+  }
+
+  reset() {
+    header = new Header();
+    _entryParser = inMethod;
+  }
+
+  addToTokenBuffer(a, startIndex, endIndex) {
+    var alen = a.length, b = _tokenBuffer, i, j, tbe = _tokenBufferEnd;
+    if (b == null) {
+      b = new List(alen > 1024 ? alen : 1024);
+      _tokenBuffer = b;
+    } else {
+      var blen = b.length, ne = tbe + (endIndex - startIndex);
+      if (ne >= blen) {
+        var c = new List(blen * 2 > tbe ? blen * 2 : tbe);
+        for (i = 0; i < tbe; i++) {
+          c[i] = b[i];
+        }
+        _tokenBuffer = c;
+      }
+    }
+    j = tbe;
+    for (i = startIndex; i < endIndex; i++) {
+      b[j] = a[i];
+      j++;
+    }
+    _tokenBufferEnd = j;
+  }
 
   parse(charCodes) {
-    header = new Header();
     _stream = charCodes;
-    _entryParser = inMethod;
     _index = 0;
     _length = _stream.length;
     while (_index < _length) {
       _entryParser();
     }
+    if (_tokenIndex >= 0) {
+      addToTokenBuffer(_stream, _tokenIndex, _length);
+      _tokenIndex = 0;
+    }
   }
 
   collectString(endIndex) {
-    var ti = _tokenIndex;
+    var s;
+    if (_tokenBufferEnd > 0) {
+      addToTokenBuffer(_stream, _tokenIndex, endIndex);
+      s = new String.fromCharCodes(_tokenBuffer, 0, _tokenBufferEnd);
+      _tokenBufferEnd = 0;
+    } else {
+      s = new String.fromCharCodes(_stream, _tokenIndex, endIndex);
+    }
     _index = endIndex + 1;
-    return new String.fromCharCodes(_stream, ti, endIndex);
+    _tokenIndex = -1;
+    return s;
   }
 
   inMethod() {
@@ -71,6 +114,9 @@ class HeaderParser {
       }
       i++;
     } while (i < len);
+    if (i >= len) {
+      _index = i;
+    }
   }
 
   inSpace() {
@@ -78,6 +124,7 @@ class HeaderParser {
     while (c == 32) {
       i++;
       if (i >= len) {
+        _index = i;
         return;
       }
       c = st[i];
@@ -113,6 +160,9 @@ class HeaderParser {
       }
       i++;
     } while (i < len);
+    if (i >= len) {
+      _index = i;
+    }
   }
 
   inHttpVersion() {
@@ -150,6 +200,9 @@ class HeaderParser {
       }
       i++;
     } while (i < len);
+    if (i >= len) {
+      _index = i;
+    }
   }
 
   inLineFeed() {
@@ -219,6 +272,9 @@ class HeaderParser {
       }
       i++;
     } while (i < len);
+    if (i >= len) {
+      _index = i;
+    }
   }
 
   inColon() {
@@ -261,6 +317,9 @@ class HeaderParser {
       }
       i++;
     } while (i < len);
+    if (i >= len) {
+      _index = i;
+    }
   }
 
 }
