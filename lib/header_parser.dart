@@ -40,16 +40,17 @@ class HeaderParser {
   addToTokenBuffer(a, startIndex, endIndex) {
     var alen = a.length, b = _tokenBuffer, i, j, tbe = _tokenBufferEnd;
     if (b == null) {
-      b = new List(alen > 1024 ? alen : 1024);
+      b = new List(alen > 1024 ? alen * 2 : 1024);
       _tokenBuffer = b;
     } else {
       var blen = b.length, ne = tbe + (endIndex - startIndex);
       if (ne >= blen) {
-        var c = new List(blen * 2 > tbe ? blen * 2 : tbe);
+        var c = new List(ne * 2);
         for (i = 0; i < tbe; i++) {
           c[i] = b[i];
         }
         _tokenBuffer = c;
+        b = c;
       }
     }
     j = tbe;
