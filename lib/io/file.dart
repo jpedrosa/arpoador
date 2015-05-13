@@ -104,7 +104,7 @@ class File {
   }
 
   write(string) {
-    _f.write(FletchHelper.codeUnits(string).buffer);
+    _f.write(FletchHelper.codeUnitsToUint8List(string).buffer);
   }
 
   writeBytes(List<int> bytes) {

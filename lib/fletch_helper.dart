@@ -6,7 +6,7 @@ import "lang.dart";
 
 class FletchHelper {
 
-  static codeUnits(s) {
+  static codeUnitsToUint8List(s) {
     var len = s.length, i, a = new Uint8List(len);
     for (i = 0; i < len; i++) {
       a[i] = s.codeUnitAt(i);
