@@ -33,7 +33,9 @@ class MoreSys {
   static final _mkdir = Foreign.lookup("mkdir");
 
   static mkdir(dirPath, [mode = DEFAULT_DIR_MODE]) {
-    var i = _retry(() => _mkdir.icall$2(new Foreign.fromString(dirPath), mode));
+    var cPath = new Foreign.fromString(dirPath);
+    var i = _retry(() => _mkdir.icall$2(cPath, mode));
+    cPath.free();
     if (i == -1) {
       throw "mkdir failed to create directory.";
     }
