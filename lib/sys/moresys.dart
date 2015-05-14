@@ -1,4 +1,5 @@
 import "dart:ffi";
+import "dart:io";
 import "../../lib/lang.dart";
 
 
@@ -32,10 +33,18 @@ class MoreSys {
   static final _mkdir = Foreign.lookup("mkdir");
 
   static mkdir(dirPath, [mode = DEFAULT_DIR_MODE]) {
-    var i = _mkdir.icall$2(new Foreign.fromString(dirPath), mode);
+    var i = _retry(() => _mkdir.icall$2(new Foreign.fromString(dirPath), mode));
     if (i == -1) {
       throw "mkdir failed to create directory.";
     }
+  }
+
+  static int _retry(Function f) {
+    int value;
+    while ((value = f()) == -1) {
+      if (Foreign.errno != Errno.EINTR) break;
+    }
+    return value;
   }
 
 }
