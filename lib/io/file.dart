@@ -52,7 +52,7 @@ class File {
         putStringEnsureNewLine(f, e);
       }
     } else {
-      f.writeStringSync(v is String ? v : v.toString());
+      write(v is String ? v : v.toString());
     }
   }
 
@@ -61,20 +61,20 @@ class File {
       s = s.toString();
     }
     Str.withNewLinePreference(s, IO.isWindows, (s, newLineStr) {
-      f.writeStringSync(s);
+      write(s);
       if (newLineStr != null) {
-        f.writeStringSync(newLineStr);
+        write(newLineStr);
       }
       });
   }
 
   operator << (string) {
-    _f.writeStringSync(string);
+    write(string);
     return this;
   }
 
   print(v) {
-    _f.writeStringSync(v is String ? v : v.toString());
+    write(v is String ? v : v.toString());
   }
 
   read([length = -1]) {
