@@ -1,40 +1,22 @@
 library File;
 
-import "dart:io" as DIO;
+import "dart:typed_data";
 import "../lang.dart";
 import "../fletch_helper.dart";
+import "../sys/moresys.dart";
 //import "../text/str.dart";
-
-
-class DIOFile {
-
-  static open(filePath, [mode = 'r']) {
-    return new DIO.File.open(filePath, mode: parseStringMode(mode));
-  }
-
-  static parseStringMode(s) {
-    var r;
-    if (s == 'r') {
-      r = DIO.File.READ;
-    } else if (s == 'w') {
-      r = DIO.File.WRITE;
-    } else if (s == 'a') {
-      r = DIO.File.APPEND;
-    } else {
-      throw "Unexpected file mode: ${s}";
-    }
-    return r;
-  }
-
-}
 
 
 class File {
 
-  var _f;
+  var _fd, _filePath;
 
   File(filePath, [mode = 'r']) {
-    _f = DIOFile.open(filePath, mode);
+    _fd = MoreSys.openFile(filePath, mode);
+    if (_fd == -1) {
+      throw "Failed to open file.";
+    }
+    _filePath = filePath;
   }
 
   static const NEW_LINE = "\n";
@@ -79,21 +61,21 @@ class File {
 
   read([length = -1]) {
     if (length < 0) {
-      length = _f.length;
+      length = this.length;
     }
-    var a = _f.read(length);
+    var a = doRead(length);
     return new String.fromCharCodes(a.asUint8List());
   }
 
   readBytes([length = -1]) {
     if (length < 0) {
-      length = _f.length;
+      length = this.length;
     }
-    return _f.read(length).asUint8List();
+    return doRead(length).asUint8List();
   }
 
   readLines() {
-    var r = [], a = readBytes(_f.length), i, si = 0, len = a.length;
+    var r = [], a = readBytes(this.length), i, si = 0, len = a.length;
     for (i = 0; i < len; i++) {
       if (a[i] == 10) {
         r.add(new String.fromCharCodes(a, si, i + 1));
@@ -104,26 +86,48 @@ class File {
   }
 
   write(string) {
-    _f.write(FletchHelper.codeUnitsToUint8List(string).buffer);
+    MoreSys.writeString(_fd, string);
   }
 
   writeBytes(List<int> bytes) {
-    _f.write(FletchHelper.bytesToUint8List(bytes).buffer);
+    MoreSys.write(_fd, FletchHelper.bytesToUint8List(bytes).buffer);
   }
 
   flush() {
-    _f.flush();
+    // Not implemented yet.
   }
 
   close() {
-    _f.close();
+    if (_fd != -1) {
+      MoreSys.close(_fd);
+    }
+    _fd = -1;
+  }
+
+  get isOpen => _fd != -1;
+
+  /**
+   * Read up to [maxBytes] from the file.
+   */
+  ByteBuffer doRead(int maxBytes) {
+    Uint8List list = new Uint8List(maxBytes);
+    ByteBuffer buffer = list.buffer;
+    int result = MoreSys.read(_fd, buffer, 0, maxBytes);
+    if (result == -1) _error("Failed to read from file");
+    if (result < maxBytes) {
+      Uint8List truncated = new Uint8List(result);
+      ByteBuffer newBuffer = truncated.buffer;
+      MoreSys.memcpy(newBuffer, 0, buffer, 0, result);
+      buffer = newBuffer;
+    }
+    return buffer;
   }
 
   /**
    * Get the current position within the file.
    */
   int get position {
-    int value = sys.lseek(_fd, 0, SEEK_CUR);
+    int value = MoreSys.lseek(_fd, 0, MoreSys.SEEK_CUR);
     if (value == -1) _error("Failed to get the current file position");
     return value;
   }
@@ -132,7 +136,7 @@ class File {
    * Seek the position within the file.
    */
   void set position(int value) {
-    if (sys.lseek(_fd, value, SEEK_SET) != value) {
+    if (MoreSys.lseek(_fd, value, MoreSys.SEEK_SET) != value) {
       _error("Failed to set file offset to '$value'");
     }
   }
@@ -142,13 +146,13 @@ class File {
    */
   int get length {
     int current = position;
-    int end = sys.lseek(_fd, 0, SEEK_END);
+    int end = MoreSys.lseek(_fd, 0, MoreSys.SEEK_END);
     if (current == -1) _error("Failed to get file length");
     position = current;
     return end;
   }
 
-  get path => _f.path;
+  get path => _filePath;
 
   static open(filePath, [mode = 'r', fn(f)]) {
     var f = new File(filePath, mode);
@@ -162,8 +166,22 @@ class File {
     return f;
   }
 
+  void _error(String message) {
+    close();
+    throw new FileException(message);
+  }
+
   toString() {
     return "File(path: ${inspect(path)})";
   }
 
+}
+
+
+class FileException implements Exception {
+  final String message;
+
+  FileException(this.message);
+
+  String toString() => "FileException: $message";
 }

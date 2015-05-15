@@ -1,3 +1,5 @@
+library moresys;
+
 import "dart:ffi";
 import "dart:io";
 import "dart:typed_data";
@@ -51,6 +53,7 @@ class MoreSys {
   static final _write = Foreign.lookup("write");
   static final _read = Foreign.lookup("read");
   static final _lseek = Foreign.lookup("lseek");
+  static final _memcpy = Foreign.lookup("memcpy");
 
   static mkdir(String dirPath, [int mode = DEFAULT_DIR_MODE]) {
     var cPath = new Foreign.fromString(dirPath);
@@ -109,14 +112,24 @@ class MoreSys {
     return i;
   }
 
-  int read(int fd, var buffer, int offset, int length) {
+  static int read(int fd, var buffer, int offset, int length) {
     _rangeCheck(buffer, offset, length);
     var address = buffer.getForeign().value + offset;
     return _retry(() => _read.icall$3(fd, address, length));
   }
 
-  int lseek(int fd, int offset, int whence) {
+  static int lseek(int fd, int offset, int whence) {
     return _retry(() => _lseek.Lcall$wLw(fd, offset, whence));
+  }
+
+  static void memcpy(var dest,
+              int destOffset,
+              var src,
+              int srcOffset,
+              int length) {
+    var destAddress = dest.getForeign().value + destOffset;
+    var srcAddress = src.getForeign().value + srcOffset;
+    _memcpy.icall$3(destAddress, srcAddress, length);
   }
 
   static void _rangeCheck(ByteBuffer buffer, int offset, int length) {
