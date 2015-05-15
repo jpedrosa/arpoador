@@ -23,6 +23,12 @@ class IO {
     return a;
   }
 
+  static readWholeBuffer(filePath) {
+    var b;
+    File.open(filePath, 'r', (f) => b = f.readWholeBuffer());
+    return b;
+  }
+
   static write(filePath, string) {
     File.open(filePath, 'w', (f) => f.write(string));
   }

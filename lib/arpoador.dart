@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import "lang.dart";
 import "header_parser.dart";
+import "fletch_helper.dart";
 
 
 class Momentum {
@@ -75,17 +76,30 @@ class Request {
 class Response {
 
   var socket, statusCode = 200, headerMap = const {"Content-Type": "text/html"},
-    responseContent = "";
+    _contentQueue, _contentLength = 0;
 
-  Response(this.socket);
+  Response(this.socket) {
+    _contentQueue = [];
+  }
 
   writeHead(statusCode, headerMap) {
     this.statusCode = statusCode;
     this.headerMap = headerMap;
   }
 
-  end(responseContent) {
-    this.responseContent = responseContent;
+  write(String string) {
+    var a = FletchHelper.stringToUint8List(string);
+    _contentQueue.add(a.buffer);
+    _contentLength += a.buffer.lengthInBytes;
+  }
+
+  end(String string) {
+    write(string);
+  }
+
+  writeBuffer(ByteBuffer buffer) {
+    _contentLength += buffer.lengthInBytes;
+    _contentQueue.add(buffer);
   }
 
   concatHeaderMap() {
@@ -97,14 +111,13 @@ class Response {
   }
 
   doFlush() {
-    var body = responseContent,
-      s = "HTTP/1.1 ${statusCode} ${statusCodeList[statusCode]}"
-        "\n${concatHeaderMap()}Content-Length: ${body.length}\n\n${body}",
-      len = s.length, i, a = new Uint8List(len);
+    var s = "HTTP/1.1 ${statusCode} ${statusCodeList[statusCode]}"
+      "\n${concatHeaderMap()}Content-Length: ${_contentLength}\n\n";
+    socket.write(FletchHelper.stringToUint8List(s).buffer);
+    var a = _contentQueue, len = a.length, i;
     for (i = 0; i < len; i++) {
-      a[i] = s.codeUnitAt(i);
+      socket.write(a[i]);
     }
-    socket.write(a.buffer);
   }
 
 }

@@ -85,12 +85,21 @@ class File {
     return r;
   }
 
+  readWholeBuffer() => doRead(length);
+
   write(string) {
     MoreSys.writeString(_fd, string);
   }
 
   writeBytes(List<int> bytes) {
     MoreSys.write(_fd, FletchHelper.bytesToUint8List(bytes).buffer);
+  }
+
+  writeBuffer(ByteBuffer buffer, [int offset = 0, int length = -1]) {
+    if (length < 0) {
+      length = buffer.lengthInBytes;
+    }
+    MoreSys.write(_fd, buffer, offset, length);
   }
 
   flush() {
