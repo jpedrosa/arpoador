@@ -119,12 +119,33 @@ class File {
     _f.close();
   }
 
-  get length => _f.length;
+  /**
+   * Get the current position within the file.
+   */
+  int get position {
+    int value = sys.lseek(_fd, 0, SEEK_CUR);
+    if (value == -1) _error("Failed to get the current file position");
+    return value;
+  }
 
-  get position => _f.position;
+  /**
+   * Seek the position within the file.
+   */
+  void set position(int value) {
+    if (sys.lseek(_fd, value, SEEK_SET) != value) {
+      _error("Failed to set file offset to '$value'");
+    }
+  }
 
-  set position(v) {
-    _f.setPosition(v);
+  /**
+   * Get the length of the file.
+   */
+  int get length {
+    int current = position;
+    int end = sys.lseek(_fd, 0, SEEK_END);
+    if (current == -1) _error("Failed to get file length");
+    position = current;
+    return end;
   }
 
   get path => _f.path;

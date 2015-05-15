@@ -14,7 +14,7 @@ stringToUint8List(s) {
 
 main() {
   MoreSys.openFile("fish.txt");
-  var fd = MoreSys.openFile("solar.txt", "w");
+  var fd = MoreSys.openFile("solar.txt", "a");
   var b = stringToUint8List("Stained\nGlass.\n").buffer;
   MoreSys.write(fd, b, 0, b.lengthInBytes);
   MoreSys.writeString(fd, "Stained\nGlass.\n");

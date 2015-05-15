@@ -41,10 +41,16 @@ class MoreSys {
   static const int O_APPEND   = 1024; // 02000
   static const int O_CLOEXEC = 524288;
 
+  static const int SEEK_SET = 0;
+  static const int SEEK_CUR = 1;
+  static const int SEEK_END = 2;
+
   static final _mkdir = Foreign.lookup("mkdir");
   static final _open = Foreign.lookup("open");
   static final _close = Foreign.lookup("close");
   static final _write = Foreign.lookup("write");
+  static final _read = Foreign.lookup("read");
+  static final _lseek = Foreign.lookup("lseek");
 
   static mkdir(String dirPath, [int mode = DEFAULT_DIR_MODE]) {
     var cPath = new Foreign.fromString(dirPath);
@@ -101,6 +107,16 @@ class MoreSys {
     var i = _retry(() => _write.icall$3(fd, cPath.value, cPath.length));
     cPath.free();
     return i;
+  }
+
+  int read(int fd, var buffer, int offset, int length) {
+    _rangeCheck(buffer, offset, length);
+    var address = buffer.getForeign().value + offset;
+    return _retry(() => _read.icall$3(fd, address, length));
+  }
+
+  int lseek(int fd, int offset, int whence) {
+    return _retry(() => _lseek.Lcall$wLw(fd, offset, whence));
   }
 
   static void _rangeCheck(ByteBuffer buffer, int offset, int length) {
