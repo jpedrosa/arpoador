@@ -48,11 +48,11 @@ class MoreSys {
   static const int SEEK_END = 2;
 
   static final _mkdir = Foreign.lookup("mkdir");
-  static final _open = Foreign.lookup("open");
+  static final _open = Foreign.lookup("open64");
   static final _close = Foreign.lookup("close");
   static final _write = Foreign.lookup("write");
   static final _read = Foreign.lookup("read");
-  static final _lseek = Foreign.lookup("lseek");
+  static final _lseek = Foreign.lookup("lseek64");
   static final _memcpy = Foreign.lookup("memcpy");
 
   static mkdir(String dirPath, [int mode = DEFAULT_DIR_MODE]) {
