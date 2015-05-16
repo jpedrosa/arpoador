@@ -136,19 +136,19 @@ class MoreSys {
     _memcpy.icall$3(destAddress, srcAddress, length);
   }
 
-  static int readdir(int dir) {
-    return _readdir.icall$1(dir);
+  static int readdir(int dirp) {
+    return _readdir.icall$1(dirp);
   }
 
   static int opendir(String dirPath) {
     Foreign cPath = new Foreign.fromString(dirPath);
-    int dir = _opendir.icall$1(cPath);
+    int dirp = _opendir.icall$1(cPath);
     cPath.free();
-    return dir;
+    return dirp;
   }
 
-  static int closedir(int dir) {
-    return _retry(() => _closedir.icall$1(dir));
+  static int closedir(int dirp) {
+    return _retry(() => _closedir.icall$1(dirp));
   }
 
   static void _rangeCheck(ByteBuffer buffer, int offset, int length) {
