@@ -40,7 +40,8 @@ class MoreSys {
   static const int O_RDWR    = 2;
   static const int O_CREAT   = 64; // 0100
   static const int O_TRUNC   = 512; // 01000
-  static const int O_APPEND   = 1024; // 02000
+  static const int O_APPEND  = 1024; // 02000
+  static const int O_DIRECTORY = 65536; // 0200000
   static const int O_CLOEXEC = 524288;
 
   static const int SEEK_SET = 0;
@@ -54,6 +55,9 @@ class MoreSys {
   static final _read = Foreign.lookup("read");
   static final _lseek = Foreign.lookup("lseek64");
   static final _memcpy = Foreign.lookup("memcpy");
+  static final _opendir = Foreign.lookup("opendir");
+  static final _readdir = Foreign.lookup("readdir");
+  static final _closedir = Foreign.lookup("closedir");
 
   static mkdir(String dirPath, [int mode = DEFAULT_DIR_MODE]) {
     var cPath = new Foreign.fromString(dirPath);
@@ -130,6 +134,21 @@ class MoreSys {
     var destAddress = dest.getForeign().value + destOffset;
     var srcAddress = src.getForeign().value + srcOffset;
     _memcpy.icall$3(destAddress, srcAddress, length);
+  }
+
+  static int readdir(int dir) {
+    return _readdir.icall$1(dir);
+  }
+
+  static int opendir(String dirPath) {
+    Foreign cPath = new Foreign.fromString(dirPath);
+    int dir = _opendir.icall$1(cPath);
+    cPath.free();
+    return dir;
+  }
+
+  static int closedir(int dir) {
+    return _retry(() => _closedir.icall$1(dir));
   }
 
   static void _rangeCheck(ByteBuffer buffer, int offset, int length) {
