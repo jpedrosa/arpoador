@@ -16,17 +16,16 @@ class FileBrowser {
       throw "Failed to open directory.";
     }
     try {
-      var foreign, n = MoreSys.readdir(dirp);
+      var foreign, list = new Uint8List(270),
+        listAddress = list.buffer.getForeign().value,
+        n = MoreSys.readdir(dirp);
       while (n > 0) {
         foreign = new Foreign.fromAddress(n, 280);
-        var c, a = [];
         for (int i = 11; i < 280; i++) {
-          c = foreign.getUint8(i);
-          if (c == 0) {
-            fn(new String.fromCharCodes(a), foreign.getUint8(10));
+          if (foreign.getUint8(i) == 0) {
+            MoreSys.memcpyMemToList(listAddress, foreign, 11, i - 11);
+            fn(new String.fromCharCodes(list, 0, i - 11), foreign.getUint8(10));
             break;
-          } else {
-            a.add(c);
           }
         }
         n = MoreSys.readdir(dirp);

@@ -136,6 +136,11 @@ class MoreSys {
     _memcpy.icall$3(destAddress, srcAddress, length);
   }
 
+  static void memcpyMemToList(int address, var src, int srcOffset,
+      int length) {
+    _memcpy.icall$3(address, src.value + srcOffset, length);
+  }
+
   static int readdir(int dirp) {
     return _readdir.icall$1(dirp);
   }
