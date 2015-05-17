@@ -16,17 +16,17 @@ class FileBrowser {
       throw "Failed to open directory.";
     }
     try {
-      var foreign, list = new Uint8List(270),
+      var foreign, list = new Uint8List(270), nameAddress,
         listAddress = list.buffer.getForeign().value,
-        n = MoreSys.readdir(dirp);
+        n = MoreSys.readdir(dirp), se;
       while (n > 0) {
         foreign = new Foreign.fromAddress(n, 280);
-        for (int i = 11; i < 280; i++) {
-          if (foreign.getUint8(i) == 0) {
-            MoreSys.memcpyMemToList(listAddress, foreign, 11, i - 11);
-            fn(new String.fromCharCodes(list, 0, i - 11), foreign.getUint8(10));
-            break;
-          }
+        nameAddress = foreign.value + 11;
+        se = MoreSys.memchr(nameAddress, 0, 270);
+        if (se > 0) {
+          MoreSys.memcpyMemToMem(listAddress, nameAddress, se - nameAddress);
+          fn(new String.fromCharCodes(list, 0, se - nameAddress),
+              foreign.getUint8(10));
         }
         n = MoreSys.readdir(dirp);
       }
@@ -43,7 +43,7 @@ class FileBrowser {
       String dirPath)) {
     var lasti = dirPath.length - 1;
     if (lasti >= 0) {
-      if (dirPath.codeUnitAt(lasti) == 47) { // /
+      if (dirPath.codeUnitAt(lasti) == 47 && lasti > 0) { // /
         dirPath = dirPath.substring(0, lasti);
       }
       doRecurseDir(dirPath, fn);
