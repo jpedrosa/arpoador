@@ -12,7 +12,7 @@ class FileBrowser {
   /// get ino => _foreign.getUint32(0);
   void browse(String dirPath, fn(String name, int type)) {
     var dirp = MoreSys.opendir(dirPath);
-    if (dirp == -1) {
+    if (dirp == 0) {
       throw "Failed to open directory.";
     }
     try {
@@ -52,14 +52,18 @@ class FileBrowser {
 
   static void doRecurseDir(String dirPath, fn(String name, int type,
       String dirPath)) {
-    scanDir(dirPath, (name, type) {
-      if (name != ".." && name != ".") {
-        fn(name, type, dirPath);
-        if (type == FileBrowser.DIRECTORY) {
-          doRecurseDir("${dirPath}/${name}", fn);
+    try {
+      scanDir(dirPath, (name, type) {
+        if (name != ".." && name != ".") {
+          fn(name, type, dirPath);
+          if (type == FileBrowser.DIRECTORY) {
+            doRecurseDir("${dirPath}/${name}", fn);
+          }
         }
-      }
-      });
+        });
+    } catch (e) {
+      // Silence errors in case of directories that cannot be opened.
+    }
   }
 
   static String translateType(int type) {
