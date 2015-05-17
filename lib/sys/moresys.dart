@@ -58,6 +58,10 @@ class MoreSys {
   static final _opendir = Foreign.lookup("opendir");
   static final _readdir = Foreign.lookup("readdir");
   static final _closedir = Foreign.lookup("closedir");
+  static final _popen = Foreign.lookup("popen");
+  static final _fgets = Foreign.lookup("fgets");
+  static final _pclose = Foreign.lookup("pclose");
+  static final _memchr = Foreign.lookup("memchr");
 
   static mkdir(String dirPath, [int mode = DEFAULT_DIR_MODE]) {
     var cPath = new Foreign.fromString(dirPath);
@@ -154,6 +158,27 @@ class MoreSys {
 
   static int closedir(int dirp) {
     return _retry(() => _closedir.icall$1(dirp));
+  }
+
+  static int popen(String command, [String operation = "r"]) {
+    Foreign cCommand = new Foreign.fromString(command);
+    Foreign cOperation = new Foreign.fromString(operation);
+    int fp = _popen.icall$2(cCommand, cOperation);
+    cCommand.free();
+    cOperation.free();
+    return fp;
+  }
+
+  static int fgets(var buffer, int length, int fp) {
+    return _fgets.icall$3(buffer.getForeign().value, length, fp);
+  }
+
+  static int pclose(int fp) {
+    return _pclose.icall$1(fp);
+  }
+
+  static int memchr(int address, int byte, int length) {
+    return _memchr.icall$3(address, byte, length);
   }
 
   static void _rangeCheck(ByteBuffer buffer, int offset, int length) {
