@@ -5,7 +5,7 @@ import "../../lib/lang.dart";
 
 main() {
   var fp = MoreSys.popen("ls");
-  if (fp != -1) {
+  if (fp != 0) {
     var n, list = new Uint8List(80), b = list.buffer,
       address = b.getForeign().value;
     while (MoreSys.fgets(b, 80, fp) != 0) {

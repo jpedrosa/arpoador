@@ -1,6 +1,7 @@
 library io;
 
 import "file.dart";
+import "popen_stream.dart";
 
 
 class IO {
@@ -35,6 +36,10 @@ class IO {
 
   static writeBytes(filePath, List<int> bytes) {
     File.open(filePath, 'w', (f) => f.writeBytes(bytes));
+  }
+
+  static void popenReadLines(command, fn(String string), [lineLength = 80]) {
+    PopenStream.readLines(command, fn, lineLength);
   }
 
 }
