@@ -204,10 +204,11 @@ class MoreSys {
     return s;
   }
 
-  // Navigate the pointer maze.
   static get environment {
+    // Navigate the pointer maze.
     var h = {}, envAddress = Foreign.lookup("environ").value, j = 0, tf, sp,
       firstByteAddress, list = new Uint8List(1024),
+      listAddress = list.buffer.getForeign().value,
       firstItemAddress = new Foreign.fromAddress(envAddress, 4).getUint32(0),
       equalCharAddress, valueAddress, stringEndAddress,
       keyLen, key, valueLen;
@@ -217,6 +218,12 @@ class MoreSys {
         break;
       }
       tf = new Foreign.fromAddress(sp, 20);
+      // Workaround. We take the first byte address to sort of normalize
+      // the integer value or memory address value, otherwise during the
+      // conversion from machine to Dart integer there could be some kind
+      // nagging overflow that when compared with the next values to get
+      // the length of key and value tokens would not represent the right
+      // sizes.
       firstByteAddress = _memchr.icall$3(sp, tf.getUint8(0), 1);
       equalCharAddress = _rawmemchr.icall$2(sp, 61);
       valueAddress = equalCharAddress + 1;
@@ -224,14 +231,16 @@ class MoreSys {
       keyLen = equalCharAddress - firstByteAddress;
       if (keyLen > list.length) {
         list = new Uint8List(keyLen);
+        listAddress = list.buffer.getForeign().value;
       }
-      _memcpy.icall$3(list.buffer.getForeign().value, sp, keyLen);
+      _memcpy.icall$3(listAddress, sp, keyLen);
       key = new String.fromCharCodes(list, 0, keyLen);
       valueLen = stringEndAddress - valueAddress;
       if (valueLen > list.length) {
         list = new Uint8List(valueLen);
+        listAddress = list.buffer.getForeign().value;
       }
-      _memcpy.icall$3(list.buffer.getForeign().value, valueAddress, valueLen);
+      _memcpy.icall$3(listAddress, valueAddress, valueLen);
       h[key] = new String.fromCharCodes(list, 0, valueLen);
       j += 4;
     }
