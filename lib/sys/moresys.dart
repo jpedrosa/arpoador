@@ -207,8 +207,10 @@ class MoreSys {
   // Navigate the pointer maze.
   static get environment {
     var h = {}, envAddress = Foreign.lookup("environ").value, j = 0, tf, sp,
-      firstByteAddress,
-      firstItemAddress = new Foreign.fromAddress(envAddress, 4).getUint32(0);
+      firstByteAddress, list = new Uint8List(1024),
+      firstItemAddress = new Foreign.fromAddress(envAddress, 4).getUint32(0),
+      equalCharAddress, valueAddress, stringEndAddress,
+      keyLen, key, valueLen;
     while (true) {
       sp = new Foreign.fromAddress(firstItemAddress + j, 4).getUint32(0);
       if (sp == 0) {
@@ -216,18 +218,21 @@ class MoreSys {
       }
       tf = new Foreign.fromAddress(sp, 20);
       firstByteAddress = _memchr.icall$3(sp, tf.getUint8(0), 1);
-      var equalCharAddress = _rawmemchr.icall$2(sp, 61);
-      var valueAddress = equalCharAddress + 1;
-      var stringEndAddress = _rawmemchr.icall$2(valueAddress, 0);
-      var keyLen = equalCharAddress - firstByteAddress;
-      var list = new Uint8List(keyLen);
+      equalCharAddress = _rawmemchr.icall$2(sp, 61);
+      valueAddress = equalCharAddress + 1;
+      stringEndAddress = _rawmemchr.icall$2(valueAddress, 0);
+      keyLen = equalCharAddress - firstByteAddress;
+      if (keyLen > list.length) {
+        list = new Uint8List(keyLen);
+      }
       _memcpy.icall$3(list.buffer.getForeign().value, sp, keyLen);
-      var key = new String.fromCharCodes(list);
-      var valueLen = stringEndAddress - valueAddress;
-      list = new Uint8List(valueLen);
+      key = new String.fromCharCodes(list, 0, keyLen);
+      valueLen = stringEndAddress - valueAddress;
+      if (valueLen > list.length) {
+        list = new Uint8List(valueLen);
+      }
       _memcpy.icall$3(list.buffer.getForeign().value, valueAddress, valueLen);
-      var value = new String.fromCharCodes(list);
-      h[key] = value;
+      h[key] = new String.fromCharCodes(list, 0, valueLen);
       j += 4;
     }
     return h;
