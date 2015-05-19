@@ -62,6 +62,8 @@ class MoreSys {
   static final _fgets = Foreign.lookup("fgets");
   static final _pclose = Foreign.lookup("pclose");
   static final _memchr = Foreign.lookup("memchr");
+  static final _rawmemchr = Foreign.lookup("rawmemchr");
+  static final _getenv = Foreign.lookup("getenv");
 
   static mkdir(String dirPath, [int mode = DEFAULT_DIR_MODE]) {
     var cPath = new Foreign.fromString(dirPath);
@@ -183,6 +185,52 @@ class MoreSys {
 
   static int memchr(int address, int byte, int length) {
     return _memchr.icall$3(address, byte, length);
+  }
+
+  static int rawmemchr(int address, int byte) {
+    return _rawmemchr.icall$2(address, byte);
+  }
+
+  static String getenv(String name) {
+    Foreign cName = new Foreign.fromString(name);
+    var s, i = _getenv.icall$1(cName);
+    cName.free();
+    if (i != 0) {
+      var n = _rawmemchr.icall$2(i, 0),
+        list = new Uint8List(n - i);
+      _memcpy.icall$3(list.buffer.getForeign().value, i, n - i);
+      s = new String.fromCharCodes(list);
+    }
+    return s;
+  }
+
+  // Navigate the pointer maze.
+  static get environment {
+    var h = {}, envAddress = Foreign.lookup("environ").value, j = 0, tf, sp,
+      firstByteAddress,
+      firstItemAddress = new Foreign.fromAddress(envAddress, 4).getUint32(0);
+    while (true) {
+      sp = new Foreign.fromAddress(firstItemAddress + j, 4).getUint32(0);
+      if (sp == 0) {
+        break;
+      }
+      tf = new Foreign.fromAddress(sp, 20);
+      firstByteAddress = _memchr.icall$3(sp, tf.getUint8(0), 1);
+      var equalCharAddress = _rawmemchr.icall$2(sp, 61);
+      var valueAddress = equalCharAddress + 1;
+      var stringEndAddress = _rawmemchr.icall$2(valueAddress, 0);
+      var keyLen = equalCharAddress - firstByteAddress;
+      var list = new Uint8List(keyLen);
+      _memcpy.icall$3(list.buffer.getForeign().value, sp, keyLen);
+      var key = new String.fromCharCodes(list);
+      var valueLen = stringEndAddress - valueAddress;
+      list = new Uint8List(valueLen);
+      _memcpy.icall$3(list.buffer.getForeign().value, valueAddress, valueLen);
+      var value = new String.fromCharCodes(list);
+      h[key] = value;
+      j += 4;
+    }
+    return h;
   }
 
   static void _rangeCheck(ByteBuffer buffer, int offset, int length) {
