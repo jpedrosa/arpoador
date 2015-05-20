@@ -61,6 +61,8 @@ class StatBuffer {
   get statMode {
     if (_statMode == null) {
       _statMode = new StatMode(mode);
+    } else {
+      _statMode.mode = mode;
     }
     return _statMode;
   }

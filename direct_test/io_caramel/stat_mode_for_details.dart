@@ -13,4 +13,8 @@ main() {
   p(sb.stat("/home/"));
   sm.mode = sb.mode;
   p(sm);
+  p(sb.stat("/proc/meminfo"));
+  p(sb);
+  p(sb.stat("/dev/console"));
+  p(sb);
 }
