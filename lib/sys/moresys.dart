@@ -8,6 +8,7 @@ import "../../lib/lang.dart";
 
 class MoreSys {
 
+  static const S_IFMT = 61440; // 0170000
   static const S_IFSOCK = 49152; // 0140000
   static const S_IFLNK = 40960; // 0120000
   static const S_IFREG = 32768; // 0100000
