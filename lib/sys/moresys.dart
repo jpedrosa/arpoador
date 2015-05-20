@@ -49,6 +49,7 @@ class MoreSys {
   static const int SEEK_END = 2;
 
   static const int SYS_STAT = 106; // 4 on x64. 106 on x86.
+  static const int SYS_LSTAT = 107; // 6 on x64. 107 on x86.
 
   static final _mkdir = Foreign.lookup("mkdir");
   static final _open = Foreign.lookup("open64");
@@ -251,17 +252,24 @@ class MoreSys {
   }
 
   static int stat(String path, [int bufferAddress = 0]) {
+    return doStat(SYS_STAT, path, bufferAddress);
+  }
+
+  static int lstat(String path, [int bufferAddress = 0]) {
+    return doStat(SYS_STAT, path, bufferAddress);
+  }
+
+  static int doStat(int sysStat, String path, int bufferAddress) {
     Foreign cPath = new Foreign.fromString(path);
     if (bufferAddress == 0) {
       // sizeof of the stat struct shows 144. We give it some room.
       var list = new Uint8List(180);
       bufferAddress = list.buffer.getForeign().value;
     }
-    int i = _syscall.icall$3(SYS_STAT, cPath, bufferAddress);
+    int i = _syscall.icall$3(sysStat, cPath, bufferAddress);
     cPath.free();
     return i;
   }
-
   static void _rangeCheck(ByteBuffer buffer, int offset, int length) {
     if (buffer.lengthInBytes < offset + length) {
       throw new IndexError(length, buffer);
