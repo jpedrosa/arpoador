@@ -7,53 +7,56 @@ import "../../lib/lang.dart";
 
 class StatBuffer {
 
-  var _bufferForeign, _statMode;
+  var _bufferForeign;
+  StatMode _statMode;
 
   StatBuffer() {
     var list = new Uint8List(180);
     _bufferForeign = list.buffer.getForeign();
   }
 
-  stat(path) {
+  bool stat(String path) {
     return MoreSys.stat(path, _bufferForeign.value) == 0;
   }
 
-  lstat(path) {
+  bool lstat(String path) {
     return MoreSys.lstat(path, _bufferForeign.value) == 0;
   }
 
-  get dev => _bufferForeign.getUint32(0);
+  int get dev => _bufferForeign.getUint32(0);
 
-  get ino => _bufferForeign.getUint32(4);
+  int get ino => _bufferForeign.getUint32(4);
 
-  get mode => _bufferForeign.getUint16(8);
+  int get mode => _bufferForeign.getUint16(8);
 
-  get nlink => _bufferForeign.getUint16(10);
+  int get nlink => _bufferForeign.getUint16(10);
 
-  get uid => _bufferForeign.getUint16(12);
+  int get uid => _bufferForeign.getUint16(12);
 
-  get gid => _bufferForeign.getUint16(14);
+  int get gid => _bufferForeign.getUint16(14);
 
-  get rdev => _bufferForeign.getUint32(16);
+  int get rdev => _bufferForeign.getUint32(16);
 
-  get size => _bufferForeign.getUint32(20);
+  int get size => _bufferForeign.getUint32(20);
 
-  get blksize => _bufferForeign.getUint32(24);
+  int get blksize => _bufferForeign.getUint32(24);
 
-  get blocks => _bufferForeign.getUint32(28);
+  int get blocks => _bufferForeign.getUint32(28);
 
   // atime_nsec starts at 36.
-  get atime => _bufferForeign.getUint32(32);
+  int get atime => _bufferForeign.getUint32(32);
 
   // mtime_nsec starts at 44.
-  get mtime => _bufferForeign.getUint32(40);
+  int get mtime => _bufferForeign.getUint32(40);
 
   // ctime_nsec starts at 52.
-  get ctime => _bufferForeign.getUint32(48);
+  int get ctime => _bufferForeign.getUint32(48);
 
-  get isRegularFile => (mode & MoreSys.S_IFMT) == S_IFREG;
+  bool get isRegularFile => (mode & MoreSys.S_IFMT) == MoreSys.S_IFREG;
 
-  get isSymlink => (mode & MoreSys.S_IFMT) == S_IFLNK;
+  bool get isDirectory => (mode & MoreSys.S_IFMT) == MoreSys.S_IFDIR;
+
+  bool get isSymlink => (mode & MoreSys.S_IFMT) == MoreSys.S_IFLNK;
 
   get statMode {
     if (_statMode == null) {
@@ -77,23 +80,23 @@ class StatMode {
 
   int mode;
 
-  StatMode([this.mode = 0]);
+  StatMode([int this.mode = 0]);
 
-  get isRegularFile => (mode & MoreSys.S_IFMT) == S_IFREG;
+  bool get isRegularFile => (mode & MoreSys.S_IFMT) == MoreSys.S_IFREG;
 
-  get isDirectory => (mode & MoreSys.S_IFMT) == S_IFDIR;
+  bool get isDirectory => (mode & MoreSys.S_IFMT) == MoreSys.S_IFDIR;
 
-  get isSymlink => (mode & MoreSys.S_IFMT) == S_IFLNK;
+  bool get isSymlink => (mode & MoreSys.S_IFMT) == MoreSys.S_IFLNK;
 
-  get isSocket => (mode & MoreSys.S_IFMT) == S_IFSOCK;
+  bool get isSocket => (mode & MoreSys.S_IFMT) == MoreSys.S_IFSOCK;
 
-  get isFifo => (mode & MoreSys.S_IFMT) == S_IFIFO;
+  bool get isFifo => (mode & MoreSys.S_IFMT) == MoreSys.S_IFIFO;
 
-  get isBlockDevice => (mode & MoreSys.S_IFMT) == S_IFBLK;
+  bool get isBlockDevice => (mode & MoreSys.S_IFMT) == MoreSys.S_IFBLK;
 
-  get isCharacterDevice => (mode & MoreSys.S_IFMT) == S_IFCHR;
+  bool get isCharacterDevice => (mode & MoreSys.S_IFMT) == MoreSys.S_IFCHR;
 
-  get modeTranslated {
+  String get modeTranslated {
     switch (mode & MoreSys.S_IFMT) {
       case MoreSys.S_IFREG: return "Regular File";
       case MoreSys.S_IFDIR: return "Directory";
@@ -106,8 +109,22 @@ class StatMode {
     }
   }
 
-  toString() {
-    return "StatMode(modeTranslated: ${inspect(modeTranslated)})";
+  String get octal {
+    var a = [], i = mode, s;
+    while (i > 7) {
+      a.add(i.remainder(8));
+      i = i ~/ 8;
+    }
+    s = i.toString();
+    for (i = a.length - 1; i >= 0; i--) {
+      s += a[i].toString();
+    }
+    return s;
+  }
+
+  String toString() {
+    return "StatMode(modeTranslated: ${inspect(modeTranslated)}, "
+        "octal: ${inspect(octal)})";
   }
 
 }
