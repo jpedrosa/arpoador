@@ -10,6 +10,9 @@ main() {
   p(File.exists("/home/dewd/t_/jungle/dirent_oh_dirent.c"));
   var sb = new StatBuffer();
   p(sb.stat("/home/dewd/t_/jungle/dirent_oh_dirent.c"));
-  p(sb.lstat("/home/dewd/t_/jungle/dirent_oh_dirent.c"));
+  p(sb);
+  p(sb.stat("/home/dewd/t_/jungle/symlink_example_dirent.c"));
+  p(sb);
+  p(sb.lstat("/home/dewd/t_/jungle/symlink_example_dirent.c"));
   p(sb);
 }

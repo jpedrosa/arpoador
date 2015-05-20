@@ -256,7 +256,7 @@ class MoreSys {
   }
 
   static int lstat(String path, [int bufferAddress = 0]) {
-    return doStat(SYS_STAT, path, bufferAddress);
+    return doStat(SYS_LSTAT, path, bufferAddress);
   }
 
   static int doStat(int sysStat, String path, int bufferAddress) {
