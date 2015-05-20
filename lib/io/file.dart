@@ -175,6 +175,8 @@ class File {
     return f;
   }
 
+  static bool exists(String filePath) => MoreSys.stat(filePath) == 0;
+
   void _error(String message) {
     close();
     throw new FileException(message);
