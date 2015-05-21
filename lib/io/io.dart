@@ -48,4 +48,4 @@ class IO {
 }
 
 
-final stdout = const Stdout();
+final stdout = new Stdout();
