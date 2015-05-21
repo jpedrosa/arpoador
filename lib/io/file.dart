@@ -186,6 +186,12 @@ class File {
     }
   }
 
+  static void rename(String oldPath, String newPath) {
+    if (MoreSys.rename(oldPath, newPath) == -1) {
+      throw new FileException("Failed to rename the file.");
+    }
+  }
+
   void _error(String message) {
     close();
     throw new FileException(message);

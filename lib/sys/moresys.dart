@@ -72,6 +72,7 @@ class MoreSys {
   static final _unlink = Foreign.lookup("unlink");
   static final _getpid = Foreign.lookup("getpid");
   static final _getcwd = Foreign.lookup("getcwd");
+  static final _rename = Foreign.lookup("rename");
 
   static mkdir(String dirPath, [int mode = DEFAULT_DIR_MODE]) {
     var cPath = new Foreign.fromString(dirPath);
@@ -294,6 +295,15 @@ class MoreSys {
       s = new String.fromCharCodes(list, 0, n - i);
     }
     return s;
+  }
+
+  static int rename(String oldPath, String newPath) {
+    Foreign cOldPath = new Foreign.fromString(oldPath);
+    Foreign cNewPath = new Foreign.fromString(newPath);
+    int i = _rename.icall$2(cOldPath, cNewPath);
+    cOldPath.free();
+    cNewPath.free();
+    return i;
   }
 
   static void _rangeCheck(ByteBuffer buffer, int offset, int length) {
