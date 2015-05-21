@@ -19,8 +19,9 @@ pad(i) {
 
 
 main() {
+  p("Hello \x1b[32mWorld\x1b[0m!");
   for (var i = 0; i < 100; i++) {
-    stdout.write("Count (${pad(i)}) down!\r");
+    stdout.write("Count (\x1b[32m${pad(i)}\x1b[0m) down!\r");
     sleep(100);
   }
   for (var i = 0; i < 100; i++) {
