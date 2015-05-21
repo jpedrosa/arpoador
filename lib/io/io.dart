@@ -2,6 +2,7 @@ library io;
 
 import "file.dart";
 import "popen_stream.dart";
+import "stdout.dart";
 
 
 class IO {
@@ -43,3 +44,6 @@ class IO {
   }
 
 }
+
+
+final stdout = const Stdout();

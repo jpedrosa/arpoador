@@ -73,6 +73,8 @@ class MoreSys {
   static final _getpid = Foreign.lookup("getpid");
   static final _getcwd = Foreign.lookup("getcwd");
   static final _rename = Foreign.lookup("rename");
+  static final _printf = Foreign.lookup("printf");
+  static final _fflush = Foreign.lookup("fflush");
 
   static mkdir(String dirPath, [int mode = DEFAULT_DIR_MODE]) {
     var cPath = new Foreign.fromString(dirPath);
@@ -304,6 +306,17 @@ class MoreSys {
     cOldPath.free();
     cNewPath.free();
     return i;
+  }
+
+  static int printf(String string) {
+    Foreign cString = new Foreign.fromString(string);
+    int i = _printf.icall$1(cString);
+    cString.free();
+    return i;
+  }
+
+  static int fflush([int stream = 0]) {
+    return _fflush.icall$1(stream);
   }
 
   static void _rangeCheck(ByteBuffer buffer, int offset, int length) {
