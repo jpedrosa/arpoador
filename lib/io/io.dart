@@ -1,5 +1,6 @@
 library io;
 
+import "dart:typed_data";
 import "file.dart";
 import "popen_stream.dart";
 import "stdout.dart";
@@ -39,7 +40,7 @@ class IO {
     File.open(filePath, 'w', (f) => f.writeBytes(bytes));
   }
 
-  static void popenReadLines(var command, fn(String string), 
+  static void popenReadLines(var command, fn(String string),
       [int lineLength = 80]) {
     PopenStream.readLines(command, fn, lineLength);
   }
