@@ -70,6 +70,8 @@ class MoreSys {
   static final _getenv = Foreign.lookup("getenv");
   static final _syscall = Foreign.lookup("syscall");
   static final _unlink = Foreign.lookup("unlink");
+  static final _getpid = Foreign.lookup("getpid");
+  static final _getcwd = Foreign.lookup("getcwd");
 
   static mkdir(String dirPath, [int mode = DEFAULT_DIR_MODE]) {
     var cPath = new Foreign.fromString(dirPath);
@@ -278,6 +280,20 @@ class MoreSys {
     int i = _unlink.icall$1(cPath);
     cPath.free();
     return i;
+  }
+
+  static int getpid() {
+    return _getpid.icall$0();
+  }
+
+  static String getcwd() {
+    var list = new Uint8List(255), foreign = list.buffer.getForeign();
+    var s, i = _getcwd.icall$2(foreign.value, 255);
+    if (i != 0) {
+      var n = _memchr.icall$3(i, 0, 255);
+      s = new String.fromCharCodes(list, 0, n - i);
+    }
+    return s;
   }
 
   static void _rangeCheck(ByteBuffer buffer, int offset, int length) {
