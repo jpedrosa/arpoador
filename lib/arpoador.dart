@@ -5,6 +5,8 @@ import 'dart:typed_data';
 import "lang.dart";
 import "header_parser.dart";
 import "fletch_helper.dart";
+import "io/stat_buffer.dart";
+import "io/io.dart";
 
 
 class Momentum {
@@ -102,17 +104,21 @@ class Response {
     _contentQueue.add(buffer);
   }
 
+  sendFile(filePath) {
+    writeBuffer(IO.readWholeBuffer(filePath));
+  }
+
   concatHeaderMap() {
     var s = "", kk = headerMap.keys, k;
     for (k in kk) {
-      s += "${k}: ${headerMap[k]}\n";
+      s += "${k}: ${headerMap[k]}\r\n";
     }
     return s;
   }
 
   doFlush() {
     var s = "HTTP/1.1 ${statusCode} ${statusCodeList[statusCode]}"
-      "\n${concatHeaderMap()}Content-Length: ${_contentLength}\n\n";
+      "\r\n${concatHeaderMap()}Content-Length: ${_contentLength}\r\n\r\n";
     socket.write(FletchHelper.stringToUint8List(s).buffer);
     var a = _contentQueue, len = a.length, i;
     for (i = 0; i < len; i++) {
