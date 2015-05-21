@@ -177,6 +177,15 @@ class File {
 
   static bool exists(String filePath) => MoreSys.stat(filePath) == 0;
 
+  /**
+   * Delete the file at [path] from disk.
+   */
+  static void delete(String path) {
+    if (MoreSys.unlink(path) == -1) {
+      throw new FileException("Failed to remove file");
+    }
+  }
+
   void _error(String message) {
     close();
     throw new FileException(message);

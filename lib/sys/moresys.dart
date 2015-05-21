@@ -69,6 +69,7 @@ class MoreSys {
   static final _rawmemchr = Foreign.lookup("rawmemchr");
   static final _getenv = Foreign.lookup("getenv");
   static final _syscall = Foreign.lookup("syscall");
+  static final _unlink = Foreign.lookup("unlink");
 
   static mkdir(String dirPath, [int mode = DEFAULT_DIR_MODE]) {
     var cPath = new Foreign.fromString(dirPath);
@@ -271,6 +272,14 @@ class MoreSys {
     cPath.free();
     return i;
   }
+
+  static int unlink(String path) {
+    Foreign cPath = new Foreign.fromString(path);
+    int i = _unlink.icall$1(cPath);
+    cPath.free();
+    return i;
+  }
+
   static void _rangeCheck(ByteBuffer buffer, int offset, int length) {
     if (buffer.lengthInBytes < offset + length) {
       throw new IndexError(length, buffer);
