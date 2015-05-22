@@ -44,13 +44,13 @@ class StatBuffer {
   int get blocks => _bufferForeign.getUint32(28);
 
   // atime_nsec starts at 36.
-  int get atime => _bufferForeign.getUint32(32);
+  int get atime => _bufferForeign.getInt32(32); // Unix time is signed.
 
   // mtime_nsec starts at 44.
-  int get mtime => _bufferForeign.getUint32(40);
+  int get mtime => _bufferForeign.getInt32(40);
 
   // ctime_nsec starts at 52.
-  int get ctime => _bufferForeign.getUint32(48);
+  int get ctime => _bufferForeign.getInt32(48);
 
   bool get isRegularFile => (mode & MoreSys.S_IFMT) == MoreSys.S_IFREG;
 
