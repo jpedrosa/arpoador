@@ -51,6 +51,7 @@ class MoreSys {
 
   static const int SYS_STAT = 106; // 4 on x64. 106 on x86.
   static const int SYS_LSTAT = 107; // 6 on x64. 107 on x86.
+  static const int SYS_GETDENTS = 141; // 78 on x64. 141 on x86.
 
   static final _mkdir = Foreign.lookup("mkdir");
   static final _open = Foreign.lookup("open64");
@@ -112,6 +113,13 @@ class MoreSys {
     flags |= O_CLOEXEC;
     Foreign cPath = new Foreign.fromString(filePath);
     int fd = _retry(() => _open.icall$3(cPath, flags, mode));
+    cPath.free();
+    return fd;
+  }
+
+  static int openDir(String dirPath) {
+    Foreign cPath = new Foreign.fromString(dirPath);
+    int fd = _retry(() => _open.icall$2(cPath, O_RDONLY | O_DIRECTORY));
     cPath.free();
     return fd;
   }
@@ -317,6 +325,10 @@ class MoreSys {
 
   static int fflush([int stream = 0]) {
     return _fflush.icall$1(stream);
+  }
+
+  static int getdents(int fd, int bufferAddress, int bufferSize) {
+    return _syscall.icall$4(SYS_GETDENTS, fd, bufferAddress, bufferSize);
   }
 
   static void _rangeCheck(ByteBuffer buffer, int offset, int length) {
