@@ -117,7 +117,7 @@ class MoreSys {
     return fd;
   }
 
-  static int openDir(String dirPath) {
+  static int doOpenDir(String dirPath) {
     Foreign cPath = new Foreign.fromString(dirPath);
     int fd = _retry(() => _open.icall$2(cPath, O_RDONLY | O_DIRECTORY));
     cPath.free();

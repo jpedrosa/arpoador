@@ -10,7 +10,7 @@ class FileBrowser {
   static const FILE = 8;
 
   /// get ino => _foreign.getUint32(0);
-  void browse(String dirPath, fn(String name, int type)) {
+  static void scanDir(String dirPath, fn(String name, int type)) {
     var dirp = MoreSys.opendir(dirPath);
     if (dirp == 0) {
       throw "Failed to open directory.";
@@ -33,10 +33,6 @@ class FileBrowser {
     } finally {
       MoreSys.closedir(dirp);
     }
-  }
-
-  static void scanDir(String dirPath, fn(String name, int type)) {
-    new FileBrowser()..browse(dirPath, fn);
   }
 
   static void recurseDir(String dirPath, fn(String name, int type,
