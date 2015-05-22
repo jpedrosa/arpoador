@@ -9,7 +9,7 @@ main() {
   });
   GetdentsFileBrowser.recurseDir("/home/dewd/t_", (name, type, dirPath) {
     if (type == GetdentsFileBrowser.DIRECTORY) {
-      p("${GetdentsFileBrowser.translateType(type)}: ${dirPath}/${name}");
+      p("${GetdentsFileBrowser.translateType(type)}: ${dirPath}${name}/");
     }
   });
 }

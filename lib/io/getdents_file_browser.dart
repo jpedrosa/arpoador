@@ -45,8 +45,8 @@ class GetdentsFileBrowser {
       String dirPath)) {
     var lasti = dirPath.length - 1;
     if (lasti >= 0) {
-      if (dirPath.codeUnitAt(lasti) == 47 && lasti > 0) { // /
-        dirPath = dirPath.substring(0, lasti);
+      if (dirPath.codeUnitAt(lasti) != 47) { // /
+        dirPath = "${dirPath}/";
       }
       doRecurseDir(dirPath, fn);
     }
@@ -59,7 +59,7 @@ class GetdentsFileBrowser {
         if (name != ".." && name != ".") {
           fn(name, type, dirPath);
           if (type == DIRECTORY) {
-            doRecurseDir("${dirPath}/${name}", fn);
+            doRecurseDir("${dirPath}${name}/", fn);
           }
         }
         });

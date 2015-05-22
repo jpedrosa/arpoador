@@ -8,7 +8,7 @@ main() {
   });
   FileBrowser.recurseDir("/home/dewd/t_", (name, type, dirPath) {
     if (type == FileBrowser.DIRECTORY) {
-      p("${FileBrowser.translateType(type)}: ${dirPath}/${name}");
+      p("${FileBrowser.translateType(type)}: ${dirPath}${name}/");
     }
   });
 }
