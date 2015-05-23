@@ -337,7 +337,7 @@ class MoreSys {
     }
   }
 
-  static int _retry(Function f) {
+  static int _retry(f()) {
     int value;
     while ((value = f()) == -1) {
       if (Foreign.errno != Errno.EINTR) break;
