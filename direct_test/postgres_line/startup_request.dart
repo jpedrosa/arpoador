@@ -15,6 +15,8 @@ class PostgresClient {
     _foreign = _list.buffer.getForeign();
   }
 
+  /* StartUp section */
+
   connect({String address: "", int port: 5432, String user: "",
       String password: "", String database: ""}) {
     try {
@@ -208,26 +210,20 @@ class PostgresClient {
     p("end.");
   }
 
-  copyStringToBuffer(bufferList, bufferOffset, s) {
-    for (var i = 0, len = s.length; i < len; i++) {
-      bufferList[bufferOffset + i] = s.codeUnitAt(i);
-    }
-  }
-
-  setBufferLength(a, len) {
+  setBufferLength(a, offset, len) {
     // Reorder the bytes to place them in network byte order.
     if (len <= 255) {
-      a[3] = len;
+      a[3 + offset] = len;
     } else if (len <= 65535) {
       _foreign.setUint16(0, len);
-      a[3] = _list[0];
-      a[2] = _list[1];
+      a[3 + offset] = _list[0];
+      a[2 + offset] = _list[1];
     } else if (len <= 2147483647) {
       _foreign.setUint32(0, len);
-      a[3] = _list[0];
-      a[2] = _list[1];
-      a[1] = _list[2];
-      a[0] = _list[3];
+      a[3 + offset] = _list[0];
+      a[2 + offset] = _list[1];
+      a[1 + offset] = _list[2];
+      a[0 + offset] = _list[3];
     } else {
       throw "Failed to set the buffer length because it exceeded the "
           "limit of unsigned 32 bits: ${len}";
@@ -278,7 +274,7 @@ class PostgresClient {
       msgLen += database.length + 10; // "database" 0 database 0
     }
     var list = new Uint8List(msgLen), offset = 8;
-    setBufferLength(list, msgLen);
+    setBufferLength(list, 0, msgLen);
     list[5] = 3; // protocol version
     if (gotUser) {
       offset = copyUserToBuffer(list, 8, user);
@@ -289,6 +285,45 @@ class PostgresClient {
     p(list);
     return list;
   }
+
+  /* End of StartUp section */
+
+  /* Query section */
+
+  copyStringToBuffer(bufferList, offset, string) {
+    for (var i = 0, len = string.length; i < len; i++) {
+      bufferList[offset + i] = string.codeUnitAt(i);
+    }
+  }
+
+  query(String command) {
+    // 6 is for 32bits length, null after string and terminator.
+    var msgLen = 6 + command.length, list = new Uint8List(msgLen + 1);
+    list[0] = 81; // Q
+    setBufferLength(list, 1, msgLen);
+    copyStringToBuffer(list, 5, command);
+    p(["query", list]);
+    try {
+      _socket.write(list.buffer);
+    } catch (e) {
+      throw "Failed to send the startup message.";
+    }
+    readQueryResults();
+  }
+
+  readQueryResults() {
+    var b = _socket.readNext();
+    if (b != null) {
+      p(["query results", b.asUint8List()]);
+      parseQueryResponse(b.asUint8List());
+    }
+  }
+
+  parseQueryResponse(list) {
+
+  }
+
+  /* End of Query section */
 
   static final BACKEND_STATUS_I = 73; // I - Idle
   static final BACKEND_STATUS_T = 84; // T - Transaction block
@@ -325,6 +360,12 @@ genLargeDatabaseName(len) {
   return sb.toString();
 }
 
+genSampleQuery() {
+  return "select tablename from pg_tables "
+      "where schemaname = 'pg_catalog' "
+      "order by tablename";
+}
+
 
 main() {
   var pc = new PostgresClient();
@@ -332,4 +373,5 @@ main() {
   //pc.connect(database: genLargeDatabaseName(65535 + 10));
   //pc.connect(database: genLargeDatabaseName(300));
   p(pc);
+  pc.query(genSampleQuery());
 }
