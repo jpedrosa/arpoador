@@ -7,7 +7,7 @@ import "../../lib/sys/moresys.dart";
 
 class PostgresClient {
 
-  var _socket, _connected = false, _stage, _list, _foreign;
+  var _socket, _connected = false, _list, _foreign, _parameters = const {};
 
   PostgresClient() {
     _list = new Uint8List(4);
@@ -86,20 +86,66 @@ class PostgresClient {
     return _foreign.getUint32(0);
   }
 
+  parseNameValuePair(list, offset, fn(name, value)) {
+    var len = list.length, name, strStart, strLen, valueOffset,
+      listAddress = list.buffer.getForeign().value;
+    strStart = listAddress + offset;
+    strLen = MoreSys.memchr(strStart, 0, len) - strStart;
+    if (strLen > 0) {
+      name = new String.fromCharCodes(list, offset, offset + strLen);
+      valueOffset = offset + strLen + 1;
+      if (valueOffset + 1 < len) {
+        p(["QQQ", list[valueOffset]]);
+        strStart = listAddress + valueOffset;
+        strLen = MoreSys.memchr(strStart, 0, len) - strStart;
+        if (strLen >= 0) {
+          fn(name, new String.fromCharCodes(list, valueOffset,
+              valueOffset + strLen));
+        } else {
+          throw "Could not parse the value.";
+        }
+      } else {
+        throw "Could not parse the value.";
+      }
+    } else {
+      throw "Could not parse the name.";
+    }
+    return valueOffset + strLen + 1;
+  }
+
   parseParameterStatus(list, offset) {
-    var len = list.length;
-    p("YES!");
+    if (offset + 5 < list.length) {
+      // No need to parse the message length. So just skip it.
+      // var msgLen = getUint32(list, offset + 1);
+      return parseNameValuePair(list, offset + 5, (name, value) {
+        _parameters[name] = value;
+        p(["name", name, "value", value]);
+      });
+    } else {
+      throw "Parameter status response was too short.";
+    }
+  }
+
+  parsePostAuthentication(list, offset) {
+    var c, len = list.length;
+    _parameters = {};
+    while (offset < len) {
+      c = list[offset];
+      if (c == 83) { // S for ParameterStatus.
+        offset = parseParameterStatus(list, offset);
+      } else {
+        p(["ccc", c]);
+        throw "Unsupported for now.";
+      }
+    }
   }
 
   parseAuthentication(list) {
     var msgLen = getUint32(list, 1),
       detail = getUint32(list, 5);
     if (detail == 0 && msgLen == 8) {
+      parsePostAuthentication(list, 9);
       _connected = true;
-      p(["Connected", _connected]);
-      if (9 < list.length) {
-        parseParameterStatus(list, 9);
-      }
     } else {
       throw "Unsupported authentication method.";
     }
@@ -129,7 +175,6 @@ class PostgresClient {
     var b = _socket.readNext();
     if (b != null) {
       p(["xxx", b.asUint8List()]);
-      p(new String.fromCharCodes(b.asUint8List()));
       parseServerResponse(b.asUint8List());
     }
     p("end.");
@@ -215,6 +260,15 @@ class PostgresClient {
     }
     p(list);
     return list;
+  }
+
+  get isConnected => _connected;
+
+  get parameters => _parameters;
+
+  toString() {
+    return "PostgresClient(connected: ${_connected}, "
+        "parameters: ${inspect(_parameters)})";
   }
 
 }
