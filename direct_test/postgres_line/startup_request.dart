@@ -78,10 +78,44 @@ class PostgresClient {
     return h;
   }
 
+  getUint32(list, offset) {
+    _list[0] = list[offset + 3];
+    _list[1] = list[offset + 2];
+    _list[2] = list[offset + 1];
+    _list[3] = list[offset + 0];
+    return _foreign.getUint32(0);
+  }
+
+  parseParameterStatus(list, offset) {
+    var len = list.length;
+    p("YES!");
+  }
+
+  parseAuthentication(list) {
+    var msgLen = getUint32(list, 1),
+      detail = getUint32(list, 5);
+    if (detail == 0 && msgLen == 8) {
+      _connected = true;
+      p(["Connected", _connected]);
+      if (9 < list.length) {
+        parseParameterStatus(list, 9);
+      }
+    } else {
+      throw "Unsupported authentication method.";
+    }
+  }
+
   parseServerResponse(list) {
     var len = list.length;
     if (len > 0) {
-      if (list[0] == 69) { // E for ErrorResponse.
+      var c = list[0];
+      if (c == 82) { // R for Authentication.
+        if (len > 8) {
+          parseAuthentication(list);
+        } else {
+          throw "The Authentication response was too short.";
+        }
+      } else if (c == 69) { // E for ErrorResponse.
         throw "ErrorResponse: ${inspect(parseFields(list))}";
       } else {
         throw "Unsupported for now.";
