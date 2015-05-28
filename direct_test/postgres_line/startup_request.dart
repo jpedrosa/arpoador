@@ -2,6 +2,7 @@ import "dart:io";
 import "dart:typed_data";
 import "../../lib/fletch_helper.dart";
 import "../../lib/lang.dart";
+import "../../lib/sys/moresys.dart";
 
 
 class PostgresClient {
@@ -29,15 +30,74 @@ class PostgresClient {
     startUp();
   }
 
-  startUp() {
-    var b;
-    do {
-      b = _socket.readNext();
-      if (b != null) {
-        p(["xxx", b.asUint8List()]);
-        p(new String.fromCharCodes(b.asUint8List()));
+  static final FIELD_MAP = const {
+    "S": "Severity",
+    "C": "Code",
+    "M": "Message",
+    "D": "Detail",
+    "H": "Hint",
+    "P": "Position",
+    "p": "Internal position",
+    "q": "Internal query",
+    "W": "Where",
+    "s": "Schema name",
+    "t": "Table name",
+    "c": "Column name",
+    "d": "Data type name",
+    "n": "Constraint name",
+    "F": "File",
+    "L": "Line",
+    "R": "Routine",
+  };
+
+  parseFields(list) {
+    var h = {}, len = list.length, i = 5, fieldDesc, key,
+      listAddress = list.buffer.getForeign().value, strStart, strLen;
+    while (i + 2 < len) {
+      key = new String.fromCharCode(list[i]);
+      strStart = listAddress + i + 1;
+      strLen = MoreSys.memchr(strStart, 0, len) - strStart;
+      if (strLen > 0) {
+        fieldDesc = FIELD_MAP[key];
+        if (fieldDesc == null) {
+          fieldDesc = key;
+        }
+        h[fieldDesc] = new String.fromCharCodes(list, i + 1, i + strLen + 1);
+      } else {
+        throw "Could not parse the field value.";
       }
-    } while (b == null);
+      i += strLen + 2;
+    }
+    if (i < len) {
+      if (i + 1 == len && list[i] == 0) {
+        // OK. End of fields. So just ignore it.
+      } else {
+        throw "Could not parse the response fields.";
+      }
+    }
+    return h;
+  }
+
+  parseServerResponse(list) {
+    var len = list.length;
+    if (len > 0) {
+      if (list[0] == 69) { // E for ErrorResponse.
+        throw "ErrorResponse: ${inspect(parseFields(list))}";
+      } else {
+        throw "Unsupported for now.";
+      }
+    } else {
+      throw "Received an empty server response.";
+    }
+  }
+
+  startUp() {
+    var b = _socket.readNext();
+    if (b != null) {
+      p(["xxx", b.asUint8List()]);
+      p(new String.fromCharCodes(b.asUint8List()));
+      parseServerResponse(b.asUint8List());
+    }
     p("end.");
   }
 
