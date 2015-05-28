@@ -7,7 +7,8 @@ import "../../lib/sys/moresys.dart";
 
 class PostgresClient {
 
-  var _socket, _connected = false, _list, _foreign, _parameters = const {};
+  var _socket, _connected = false, _list, _foreign, _parameters = const {},
+    _processId = 0, _secretKey = 0, _backEndStatus = 0;
 
   PostgresClient() {
     _list = new Uint8List(4);
@@ -126,6 +127,29 @@ class PostgresClient {
     }
   }
 
+  parseBackendKeyData(list, offset) {
+    if (offset + 12 < list.length) {
+      // Ignore the message length.
+      // getUint32(list, offset + 1)
+      _processId = getUint32(list, offset + 5);
+      _secretKey = getUint32(list, offset + 9);
+      p(["processId", _processId, "secretKey", _secretKey]);
+    } else {
+      throw "The BackendKeyData response was too short.";
+    }
+    return offset + 13;
+  }
+
+  parseReadyForQuery(list, offset) {
+    if (offset + 5 < list.length) {
+      _backEndStatus = list[offset + 5];
+      p(["_backEndStatus", _backEndStatus]);
+    } else {
+      throw "The BackendKeyData response was too short.";
+    }
+    return offset + 13;
+  }
+
   parsePostAuthentication(list, offset) {
     var c, len = list.length;
     _parameters = {};
@@ -133,6 +157,10 @@ class PostgresClient {
       c = list[offset];
       if (c == 83) { // S for ParameterStatus.
         offset = parseParameterStatus(list, offset);
+      } else if (c == 75) { // K for BackendKeyData.
+        offset = parseBackendKeyData(list, offset);
+      } else if (c == 90) { // Z for ReadyForQuery.
+        offset = parseReadyForQuery(list, offset);
       } else {
         p(["ccc", c]);
         throw "Unsupported for now.";
@@ -262,13 +290,28 @@ class PostgresClient {
     return list;
   }
 
+  static final BACKEND_STATUS_I = 73; // I - Idle
+  static final BACKEND_STATUS_T = 84; // T - Transaction block
+  static final BACKEND_STATUS_E = 69; // E - Failed transaction block
+
   get isConnected => _connected;
 
   get parameters => _parameters;
 
+  get processId => _processId;
+
+  get secretKey => _secretKey;
+
+  get backEndStatus => _backEndStatus;
+
+  get translatedBackEndStatus => _backEndStatus > 0 ?
+      new String.fromCharCode(_backEndStatus) : null;
+
   toString() {
     return "PostgresClient(connected: ${_connected}, "
-        "parameters: ${inspect(_parameters)})";
+        "parameters: ${inspect(_parameters)}, "
+        "processId: ${_processId}, secretKey: ${_secretKey}, "
+        "translatedBackEndStatus: ${inspect(translatedBackEndStatus)})";
   }
 
 }
@@ -288,5 +331,5 @@ main() {
   pc.connect(address: "127.0.0.1", user: "postgres", database: "devel");
   //pc.connect(database: genLargeDatabaseName(65535 + 10));
   //pc.connect(database: genLargeDatabaseName(300));
-  p("ok");
+  p(pc);
 }
