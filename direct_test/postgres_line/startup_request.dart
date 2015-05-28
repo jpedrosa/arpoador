@@ -161,22 +161,22 @@ class PostgresClient {
     /*final header = [0, 0, 0, 0, // message length
         0, 3, 0, 0]; // protocol version*/
     var msgLen = 9, // space for length, protocol version and null terminator.
-      userLen = user.length, dbLen = database.length;
-    if (userLen > 0) {
+      gotUser = user.length > 0, gotDb = database.length > 0;
+    if (gotUser) {
       // 6 is for the 4 "user" bytes and 2 null values marking their ends.
-      msgLen += userLen + 6; // "user" 0 user 0
+      msgLen += user.length + 6; // "user" 0 user 0
     }
-    if (dbLen > 0) {
+    if (gotDb) {
       // 10 is for the 8 "database" bytes and 2 null values marking their ends.
-      msgLen += dbLen + 10; // "database" 0 database 0
+      msgLen += database.length + 10; // "database" 0 database 0
     }
     var list = new Uint8List(msgLen), offset = 8;
     setBufferLength(list, msgLen);
     list[5] = 3; // protocol version
-    if (userLen > 0) {
+    if (gotUser) {
       offset = copyUserToBuffer(list, 8, user);
     }
-    if (dbLen > 0) {
+    if (gotDb) {
       copyDatabaseToBuffer(list, offset, database);
     }
     p(list);
