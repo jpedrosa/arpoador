@@ -160,7 +160,7 @@ class PostgresClient {
   prepareStartUpBuffer(user, database) {
     /*final header = [0, 0, 0, 0, // message length
         0, 3, 0, 0]; // protocol version*/
-    var msgLen = 8, // enough space for length and protocol version.
+    var msgLen = 9, // space for length, protocol version and null terminator.
       userLen = user.length, dbLen = database.length;
     if (userLen > 0) {
       // 6 is for the 4 "user" bytes and 2 null values marking their ends.
