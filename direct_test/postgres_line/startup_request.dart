@@ -405,12 +405,16 @@ class PostgresClient {
     var columnCount = fields.length; // Take a shortcut.
     var ncol, dt, v, valueLen, row, len = list.length;
     do {
+      offset += 7;
       row = [];
       for (ncol = 0; ncol < columnCount; ncol++) {
         dt = fields[ncol].dataTypeObjectId;
-        valueLen = getInt32(list, offset + 7);
-        offset += 11;
-        if (dt == STRING_DATATYPE) {
+        valueLen = getInt32(list, offset);
+        offset += 4;
+        if (valueLen == -1) {
+          v = null;
+          valueLen = 0;
+        } else if (dt == STRING_DATATYPE) {
           v = new String.fromCharCodes(list, offset, offset + valueLen);
         } else {
           throw "Unsupported data type (${dt}) for now.";
@@ -484,11 +488,27 @@ genLargeDatabaseName(len) {
   return sb.toString();
 }
 
-genSampleQuery() {
+genSampleQuery1() {
   return "select tablename from pg_tables "
       "where schemaname = 'pg_catalog' "
       "order by tablename";
 }
+
+
+genSampleQuery10() {
+  return "select * from pg_tables "
+      "where schemaname = 'pg_catalog' "
+      "order by tablename";
+}
+
+
+genSampleQuery20() {
+  return "select schemaname, tablename from pg_tables "
+      "where schemaname = 'pg_catalog' "
+      "order by tablename";
+}
+
+
 
 
 main() {
@@ -497,5 +517,5 @@ main() {
   //pc.connect(database: genLargeDatabaseName(65535 + 10));
   //pc.connect(database: genLargeDatabaseName(300));
   p(pc);
-  pc.query(genSampleQuery());
+  pc.query(genSampleQuery20());
 }
