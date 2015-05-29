@@ -399,6 +399,7 @@ class PostgresClient {
 
   static final STRING_DATATYPE = 19;
   static final BOOLEAN_DATATYPE = 16;
+  static final TEXT_BLOB_DATATYPE = 25; // max size: 65535
 
   parseDataRows(list, offset, queryResults) {
     var rows = [], fields = queryResults.fields;
@@ -419,7 +420,7 @@ class PostgresClient {
           } else {
             throw "Unsupported negative value length.";
           }
-        } else if (dt == STRING_DATATYPE) {
+        } else if (dt == STRING_DATATYPE || dt == TEXT_BLOB_DATATYPE) {
           v = new String.fromCharCodes(list, offset, offset + valueLen);
         } else if (dt == BOOLEAN_DATATYPE) {
           v = list[offset] == 116;
@@ -523,6 +524,26 @@ genSampleQuery30() {
 }
 
 
+genSampleQuery40() {
+  return "select * from pg_statistic";
+}
+
+
+genSampleQuery50() {
+  return "select * from pg_attribute";
+}
+
+
+genSampleQuery60() {
+  return "select * from pg_attrdef";
+}
+
+
+genSampleQuery70() {
+  return "select description from pg_description";
+}
+
+
 
 
 main() {
@@ -531,5 +552,5 @@ main() {
   //pc.connect(database: genLargeDatabaseName(65535 + 10));
   //pc.connect(database: genLargeDatabaseName(300));
   p(pc);
-  pc.query(genSampleQuery10());
+  pc.query(genSampleQuery1());
 }
