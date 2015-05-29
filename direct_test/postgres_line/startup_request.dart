@@ -30,7 +30,7 @@ class PostgresClient {
     } catch (e) {
       throw "Failed to send the startup message.";
     }
-    startUp();
+    readStartUp();
   }
 
   static final FIELD_MAP = const {
@@ -54,10 +54,14 @@ class PostgresClient {
   };
 
   parseFields(list) {
-    var h = {}, len = list.length, i = 5, fieldDesc, key,
+    var h = {}, len = list.length, i = 5, fieldDesc, key, c,
       listAddress = list.buffer.getForeign().value, strStart, strLen;
     while (i + 2 < len) {
-      key = new String.fromCharCode(list[i]);
+      c = list[i];
+      if (c == 0) {
+        break;
+      }
+      key = new String.fromCharCode(c);
       strStart = listAddress + i + 1;
       strLen = MoreSys.memchr(strStart, 0, len) - strStart;
       if (strLen > 0) {
@@ -72,7 +76,7 @@ class PostgresClient {
       i += strLen + 2;
     }
     if (i < len) {
-      if (i + 1 == len && list[i] == 0) {
+      if ((i + 1 == len && list[i] == 0) || list[i] == 0) {
         // OK. End of fields. So just ignore it.
       } else {
         throw "Could not parse the response fields.";
@@ -171,8 +175,7 @@ class PostgresClient {
   }
 
   parseAuthentication(list) {
-    var msgLen = getUint32(list, 1),
-      detail = getUint32(list, 5);
+    var msgLen = getUint32(list, 1), detail = getUint32(list, 5);
     if (detail == 0 && msgLen == 8) {
       parsePostAuthentication(list, 9);
       _connected = true;
@@ -201,7 +204,7 @@ class PostgresClient {
     }
   }
 
-  startUp() {
+  readStartUp() {
     var b = _socket.readNext();
     if (b != null) {
       p(["xxx", b.asUint8List()]);
@@ -297,8 +300,8 @@ class PostgresClient {
   }
 
   query(String command) {
-    // 6 is for 32bits length, null after string and terminator.
-    var msgLen = 6 + command.length, list = new Uint8List(msgLen + 1);
+    // 5 is for 32bits length, null after string.
+    var msgLen = 5 + command.length, list = new Uint8List(msgLen + 1);
     list[0] = 81; // Q
     setBufferLength(list, 1, msgLen);
     copyStringToBuffer(list, 5, command);
@@ -319,8 +322,23 @@ class PostgresClient {
     }
   }
 
-  parseQueryResponse(list) {
+  parseRowDescription(list) {
 
+  }
+
+  parseQueryResponse(list) {
+    var len = list.length;
+    if (len == 0) {
+      throw "The query response is empty.";
+    }
+    var c = list[0];
+    if (c == 84) { // T for RowDescription.
+      parseRowDescription(list);
+    } else if (c == 69) { // E for ErrorResponse.
+      throw "ErrorResponse: ${inspect(parseFields(list))}";
+    } else {
+      throw "Unsupported for now.";
+    }
   }
 
   /* End of Query section */
@@ -350,7 +368,7 @@ class PostgresClient {
   }
 
 }
-
+*/
 
 genLargeDatabaseName(len) {
   var i, sb = new StringBuffer();
