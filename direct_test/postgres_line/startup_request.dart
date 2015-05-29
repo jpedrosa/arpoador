@@ -5,6 +5,42 @@ import "../../lib/lang.dart";
 import "../../lib/sys/moresys.dart";
 
 
+class FieldDescription {
+
+  var name = "", tableObjectId = 0, columnAttributeNumber = 0,
+    dataTypeObjectId = 0, dataTypeSize = 0, typeModifier = 0,
+    formatCode = 0;
+
+  toString() {
+    return "FieldDescription(name: ${inspect(name)}, "
+        "tableObjectId: ${tableObjectId}, "
+        "columnAttributeNumber: ${columnAttributeNumber}, "
+        "dataTypeObjectId: ${dataTypeObjectId}, "
+        "dataTypeSize: ${dataTypeSize}, "
+        "typeModifier: ${typeModifier}, "
+        "formatCode: ${formatCode})";
+  }
+
+}
+
+
+class RowDescription {
+
+  var _fields;
+
+  RowDescription() {
+    _fields = [];
+  }
+
+  get fields => _fields;
+
+  toString() {
+    return "RowDescription(fields: ${inspect(_fields)})";
+  }
+
+}
+
+
 class PostgresClient {
 
   var _socket, _connected = false, _list, _foreign, _parameters = const {},
@@ -91,6 +127,12 @@ class PostgresClient {
     _list[2] = list[offset + 1];
     _list[3] = list[offset + 0];
     return _foreign.getUint32(0);
+  }
+
+  getUint16(list, offset) {
+    _list[0] = list[offset + 1];
+    _list[1] = list[offset + 0];
+    return _foreign.getUint16(0);
   }
 
   parseNameValuePair(list, offset, fn(name, value)) {
@@ -322,8 +364,38 @@ class PostgresClient {
     }
   }
 
-  parseRowDescription(list) {
+  findStringLength(address, len) {
+    return MoreSys.memchr(address, 0, len) - address;
+  }
 
+  parseRowDescription(list) {
+    var len = list.length;
+    if (len < 7) {
+      throw "RowDescript is too short.";
+    }
+    p("xxx");
+    var rd = new RowDescription(), columnCount = getUint16(list, 5), fd,
+      listAddress = list.buffer.getForeign().value, offset = 7, strLen;
+    p(["columnCount", columnCount]);
+    while (columnCount > 0) {
+      fd = new FieldDescription();
+      rd.fields.add(fd);
+      p(["zomg", columnCount]);
+      strLen = findStringLength(listAddress + offset, len);
+      p(["strLen", strLen]);
+      fd.name = new String.fromCharCodes(list, offset, offset + strLen);
+      offset += strLen + 1;
+      fd.tableObjectId = getUint32(list, offset);
+      fd.columnAttributeNumber = getUint16(list, offset + 4);
+      fd.dataTypeObjectId = getUint32(list, offset + 6);
+      fd.dataTypeSize = getUint16(list, offset + 10);
+      fd.typeModifier = getUint32(list, offset + 12);
+      fd.formatCode = getUint16(list, offset + 16);
+      p(["fd", fd]);
+      columnCount--;
+      offset += 18;
+    }
+    return rd;
   }
 
   parseQueryResponse(list) {
@@ -368,7 +440,7 @@ class PostgresClient {
   }
 
 }
-*/
+
 
 genLargeDatabaseName(len) {
   var i, sb = new StringBuffer();
