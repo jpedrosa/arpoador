@@ -412,9 +412,13 @@ class PostgresClient {
         dt = fields[ncol].dataTypeObjectId;
         valueLen = getInt32(list, offset);
         offset += 4;
-        if (valueLen == -1) {
-          v = null;
-          valueLen = 0;
+        if (valueLen < 0) {
+          if (valueLen == -1) {
+            v = null;
+            valueLen = 0;
+          } else {
+            throw "Unsupported negative value length.";
+          }
         } else if (dt == STRING_DATATYPE) {
           v = new String.fromCharCodes(list, offset, offset + valueLen);
         } else if (dt == BOOLEAN_DATATYPE) {
