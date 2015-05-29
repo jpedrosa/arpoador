@@ -398,6 +398,7 @@ class PostgresClient {
   }
 
   static final STRING_DATATYPE = 19;
+  static final BOOLEAN_DATATYPE = 16;
 
   parseDataRows(list, offset, queryResults) {
     var rows = [], fields = queryResults.fields;
@@ -416,6 +417,8 @@ class PostgresClient {
           valueLen = 0;
         } else if (dt == STRING_DATATYPE) {
           v = new String.fromCharCodes(list, offset, offset + valueLen);
+        } else if (dt == BOOLEAN_DATATYPE) {
+          v = list[offset] == 116;
         } else {
           throw "Unsupported data type (${dt}) for now.";
         }
@@ -509,6 +512,13 @@ genSampleQuery20() {
 }
 
 
+genSampleQuery30() {
+  return "select hasindexes from pg_tables "
+      "where schemaname = 'pg_catalog' "
+      "order by tablename";
+}
+
+
 
 
 main() {
@@ -517,5 +527,5 @@ main() {
   //pc.connect(database: genLargeDatabaseName(65535 + 10));
   //pc.connect(database: genLargeDatabaseName(300));
   p(pc);
-  pc.query(genSampleQuery20());
+  pc.query(genSampleQuery10());
 }
