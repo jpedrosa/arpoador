@@ -24,18 +24,13 @@ class FieldDescription {
 }
 
 
-class RowDescription {
+class QueryResults {
 
-  var _fields;
-
-  RowDescription() {
-    _fields = [];
-  }
-
-  get fields => _fields;
+  var fields = [], rows = [];
 
   toString() {
-    return "RowDescription(fields: ${inspect(_fields)})";
+    return "QueryResults(fields: ${inspect(fields)}, "
+        "rows: ${rows})";
   }
 
 }
@@ -50,6 +45,32 @@ class PostgresClient {
     _list = new Uint8List(4);
     _foreign = _list.buffer.getForeign();
   }
+
+  /* Helper section */
+
+  getUint32(list, offset) {
+    _list[0] = list[offset + 3];
+    _list[1] = list[offset + 2];
+    _list[2] = list[offset + 1];
+    _list[3] = list[offset + 0];
+    return _foreign.getUint32(0);
+  }
+
+  getUint16(list, offset) {
+    _list[0] = list[offset + 1];
+    _list[1] = list[offset + 0];
+    return _foreign.getUint16(0);
+  }
+
+  getInt32(list, offset) {
+    _list[0] = list[offset + 3];
+    _list[1] = list[offset + 2];
+    _list[2] = list[offset + 1];
+    _list[3] = list[offset + 0];
+    return _foreign.getInt32(0);
+  }
+
+  /* End of Helper section */
 
   /* StartUp section */
 
@@ -121,20 +142,6 @@ class PostgresClient {
     return h;
   }
 
-  getUint32(list, offset) {
-    _list[0] = list[offset + 3];
-    _list[1] = list[offset + 2];
-    _list[2] = list[offset + 1];
-    _list[3] = list[offset + 0];
-    return _foreign.getUint32(0);
-  }
-
-  getUint16(list, offset) {
-    _list[0] = list[offset + 1];
-    _list[1] = list[offset + 0];
-    return _foreign.getUint16(0);
-  }
-
   parseNameValuePair(list, offset, fn(name, value)) {
     var len = list.length, name, strStart, strLen, valueOffset,
       listAddress = list.buffer.getForeign().value;
@@ -144,7 +151,6 @@ class PostgresClient {
       name = new String.fromCharCodes(list, offset, offset + strLen);
       valueOffset = offset + strLen + 1;
       if (valueOffset + 1 < len) {
-        p(["QQQ", list[valueOffset]]);
         strStart = listAddress + valueOffset;
         strLen = MoreSys.memchr(strStart, 0, len) - strStart;
         if (strLen >= 0) {
@@ -168,7 +174,6 @@ class PostgresClient {
       // var msgLen = getUint32(list, offset + 1);
       return parseNameValuePair(list, offset + 5, (name, value) {
         _parameters[name] = value;
-        p(["name", name, "value", value]);
       });
     } else {
       throw "Parameter status response was too short.";
@@ -368,21 +373,17 @@ class PostgresClient {
     return MoreSys.memchr(address, 0, len) - address;
   }
 
-  parseRowDescription(list) {
+  parseRowDescription(list, fn(rd)) {
     var len = list.length;
     if (len < 7) {
-      throw "RowDescript is too short.";
+      throw "RowDescription response is too short.";
     }
-    p("xxx");
-    var rd = new RowDescription(), columnCount = getUint16(list, 5), fd,
+    var ff = [], columnCount = getUint16(list, 5), fd,
       listAddress = list.buffer.getForeign().value, offset = 7, strLen;
-    p(["columnCount", columnCount]);
     while (columnCount > 0) {
       fd = new FieldDescription();
-      rd.fields.add(fd);
-      p(["zomg", columnCount]);
+      ff.add(fd);
       strLen = findStringLength(listAddress + offset, len);
-      p(["strLen", strLen]);
       fd.name = new String.fromCharCodes(list, offset, offset + strLen);
       offset += strLen + 1;
       fd.tableObjectId = getUint32(list, offset);
@@ -391,11 +392,11 @@ class PostgresClient {
       fd.dataTypeSize = getUint16(list, offset + 10);
       fd.typeModifier = getUint32(list, offset + 12);
       fd.formatCode = getUint16(list, offset + 16);
-      p(["fd", fd]);
       columnCount--;
       offset += 18;
     }
-    return rd;
+    fn(ff);
+    return offset;
   }
 
   parseQueryResponse(list) {
@@ -405,7 +406,11 @@ class PostgresClient {
     }
     var c = list[0];
     if (c == 84) { // T for RowDescription.
-      parseRowDescription(list);
+      var qr = new QueryResults(), offset;
+      offset = parseRowDescription(list, (fields) {
+        qr.fields = fields;
+      });
+      p(["qr", qr]);
     } else if (c == 69) { // E for ErrorResponse.
       throw "ErrorResponse: ${inspect(parseFields(list))}";
     } else {
