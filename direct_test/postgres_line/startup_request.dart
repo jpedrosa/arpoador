@@ -186,7 +186,6 @@ class PostgresClient {
       // getUint32(list, offset + 1)
       _processId = getUint32(list, offset + 5);
       _secretKey = getUint32(list, offset + 9);
-      p(["processId", _processId, "secretKey", _secretKey]);
     } else {
       throw "The BackendKeyData response was too short.";
     }
@@ -196,7 +195,6 @@ class PostgresClient {
   parseReadyForQuery(list, offset) {
     if (offset + 5 < list.length) {
       _backEndStatus = list[offset + 5];
-      p(["_backEndStatus", _backEndStatus]);
     } else {
       throw "The BackendKeyData response was too short.";
     }
@@ -373,7 +371,7 @@ class PostgresClient {
     return MoreSys.memchr(address, 0, len) - address;
   }
 
-  parseRowDescription(list, fn(rd)) {
+  parseRowDescription(list, queryResults) {
     var len = list.length;
     if (len < 7) {
       throw "RowDescription response is too short.";
@@ -395,8 +393,34 @@ class PostgresClient {
       columnCount--;
       offset += 18;
     }
-    fn(ff);
+    queryResults.fields = ff;
     return offset;
+  }
+
+  static final STRING_DATATYPE = 19;
+
+  parseDataRows(list, offset, queryResults) {
+    var rows = [], fields = queryResults.fields;
+    //var columnCount = getUint16(list, offset + 5);
+    var columnCount = fields.length; // Take a shortcut.
+    var ncol, dt, v, valueLen, row, len = list.length;
+    do {
+      row = [];
+      for (ncol = 0; ncol < columnCount; ncol++) {
+        dt = fields[ncol].dataTypeObjectId;
+        valueLen = getInt32(list, offset + 7);
+        offset += 11;
+        if (dt == STRING_DATATYPE) {
+          v = new String.fromCharCodes(list, offset, offset + valueLen);
+        } else {
+          throw "Unsupported data type (${dt}) for now.";
+        }
+        row.add(v);
+        offset += valueLen;
+      }
+      rows.add(row);
+    } while (offset < len && list[offset] == 68); // D for another DataRow.
+    queryResults.rows = rows;
   }
 
   parseQueryResponse(list) {
@@ -407,9 +431,14 @@ class PostgresClient {
     var c = list[0];
     if (c == 84) { // T for RowDescription.
       var qr = new QueryResults(), offset;
-      offset = parseRowDescription(list, (fields) {
-        qr.fields = fields;
-      });
+      offset = parseRowDescription(list, qr);
+      if (offset < len) {
+        if (list[offset] == 68) { // D
+          parseDataRows(list, offset, qr);
+        } else {
+          throw "Unsupported for now.";
+        }
+      }
       p(["qr", qr]);
     } else if (c == 69) { // E for ErrorResponse.
       throw "ErrorResponse: ${inspect(parseFields(list))}";
