@@ -401,12 +401,47 @@ class PostgresClient {
   static final BOOLEAN_DATATYPE = 16;
   static final TEXT_BLOB_DATATYPE = 25; // max size: 65535
 
+  readFullMessageLength(messageLength, list, offset) {
+    var newList, newListAddress, len = list.length;
+    var b = _socket.readNext();
+    if (b != null) {
+      //p(["read more results", b.asUint8List()]);
+      var remainingLen = len - offset,
+        bufferList = b.asUint8List(),
+        blen = bufferList.length,
+        size = remainingLen + blen;
+      newList = new Uint8List(size);
+      newListAddress = newList.buffer.getForeign().value;
+      MoreSys.memcpyMemToMem(newListAddress,
+          list.buffer.getForeign().value + offset, remainingLen);
+      MoreSys.memcpyMemToMem(newListAddress + remainingLen,
+          bufferList.buffer.getForeign().value, blen);
+    } else {
+      throw "Unable to read more data needed for the DataRow parsing.";
+    }
+    return newList;
+  }
+
+  readMore(list, offset, fn(newList, newOffset)) {
+    throw "Suport read more.";
+  }
+
   parseDataRows(list, offset, queryResults) {
     var rows = [], fields = queryResults.fields;
     //var columnCount = getUint16(list, offset + 5);
     var columnCount = fields.length; // Take a shortcut.
-    var ncol, dt, v, valueLen, row, len = list.length;
+    var msgLen, ncol, dt, v, valueLen, row, len = list.length;
     do {
+      if (offset + 4 >= len) {
+        readMore(list, offset, (newList, newOffset) {
+        });
+      }
+      msgLen = getUint32(list, offset + 1);
+      if (offset + msgLen >= len) {
+        list = readFullMessageLength(msgLen, list, offset);
+        len = list.length;
+        offset = 0;
+      }
       offset += 7;
       row = [];
       for (ncol = 0; ncol < columnCount; ncol++) {
@@ -552,5 +587,5 @@ main() {
   //pc.connect(database: genLargeDatabaseName(65535 + 10));
   //pc.connect(database: genLargeDatabaseName(300));
   p(pc);
-  pc.query(genSampleQuery1());
+  pc.query(genSampleQuery70());
 }
