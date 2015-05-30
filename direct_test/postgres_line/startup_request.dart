@@ -402,23 +402,32 @@ class PostgresClient {
   static final TEXT_BLOB_DATATYPE = 25; // max size: 65535
 
   readFullMessageLength(messageLength, list, offset) {
-    var newList, newListAddress, len = list.length;
-    var b = _socket.readNext();
-    if (b != null) {
-      //p(["read more results", b.asUint8List()]);
-      var remainingLen = len - offset,
-        bufferList = b.asUint8List(),
-        blen = bufferList.length,
-        size = remainingLen + blen;
-      newList = new Uint8List(size);
-      newListAddress = newList.buffer.getForeign().value;
-      MoreSys.memcpyMemToMem(newListAddress,
-          list.buffer.getForeign().value + offset, remainingLen);
-      MoreSys.memcpyMemToMem(newListAddress + remainingLen,
-          bufferList.buffer.getForeign().value, blen);
-    } else {
-      throw "Unable to read more data needed for the DataRow parsing.";
-    }
+    var newList, newListAddress, newListOffset = 0,
+      remainingLen = list.length - offset,
+      buffers = [], b, size = remainingLen;
+    do {
+      b = _socket.readNext();
+      if (b != null) {
+        buffers.add(b);
+        size += b.lengthInBytes;
+        if (size > messageLength) {
+          newList = new Uint8List(size);
+          newListAddress = newList.buffer.getForeign().value;
+          MoreSys.memcpyMemToMem(newListAddress,
+              list.buffer.getForeign().value + offset, remainingLen);
+          newListOffset = remainingLen;
+          for (int j = 0; j < buffers.length; j++) {
+            b = buffers[j];
+            MoreSys.memcpyMemToMem(newListAddress + newListOffset,
+                b.getForeign().value, b.lengthInBytes);
+            newListOffset += b.lengthInBytes;
+          }
+          break;
+        }
+      } else {
+        throw "Unable to read more data needed for the DataRow parsing.";
+      }
+    } while (true);
     return newList;
   }
 
@@ -480,7 +489,7 @@ class PostgresClient {
       var qr = new QueryResults(), offset;
       offset = parseRowDescription(list, qr);
       if (offset < len) {
-        if (list[offset] == 68) { // D
+        if (list[offset] == 68) { // D for DataRow.
           parseDataRows(list, offset, qr);
         } else {
           throw "Unsupported for now.";
