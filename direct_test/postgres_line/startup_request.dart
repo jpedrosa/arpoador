@@ -430,8 +430,20 @@ class PostgresClient {
     return newList;
   }
 
-  readMore(list, offset, fn(newList, newOffset)) {
-    throw "Suport read more.";
+  readMore(list, offset) {
+    var newList, b = _socket.readNext();
+    if (b != null) {
+      var remainingLen = list.length - offset;
+      newList = new Uint8List(b.lengthInBytes + remainingLen);
+      var newListAddress = newList.buffer.getForeign().value;
+      MoreSys.memcpyMemToMem(newListAddress,
+          list.buffer.getForeign().value + offset, remainingLen);
+      MoreSys.memcpyMemToMem(newListAddress + remainingLen,
+          b.getForeign().value, b.lengthInBytes);
+    } else {
+      throw "Unable to read more data.";
+    }
+    return newList;
   }
 
   parseDataRows(list, offset, queryResults) {
@@ -441,8 +453,9 @@ class PostgresClient {
     var msgLen, ncol, dt, v, valueLen, row, len = list.length;
     do {
       if (offset + 4 >= len) {
-        readMore(list, offset, (newList, newOffset) {
-        });
+        list = readMore(list, offset);
+        len = list.length;
+        offset = 0;
       }
       msgLen = getUint32(list, offset + 1);
       if (offset + msgLen >= len) {
@@ -495,6 +508,7 @@ class PostgresClient {
         }
       }
       p(["qr", qr]);
+      p(["rows count", qr.rows.length]);
     } else if (c == 69) { // E for ErrorResponse.
       throw "ErrorResponse: ${inspect(parseFields(list))}";
     } else {
