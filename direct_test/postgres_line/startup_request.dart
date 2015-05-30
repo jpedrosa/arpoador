@@ -402,8 +402,7 @@ class PostgresClient {
   static final TEXT_BLOB_DATATYPE = 25; // max size: 65535
 
   readFullMessageLength(messageLength, list, offset) {
-    var newList, newListAddress, newListOffset = 0,
-      remainingLen = list.length - offset,
+    var newList, remainingLen = list.length - offset,
       buffers = [], b, size = remainingLen;
     do {
       b = _socket.readNext();
@@ -412,10 +411,10 @@ class PostgresClient {
         size += b.lengthInBytes;
         if (size > messageLength) {
           newList = new Uint8List(size);
-          newListAddress = newList.buffer.getForeign().value;
+          var newListAddress = newList.buffer.getForeign().value;
           MoreSys.memcpyMemToMem(newListAddress,
               list.buffer.getForeign().value + offset, remainingLen);
-          newListOffset = remainingLen;
+          var newListOffset = remainingLen;
           for (int j = 0; j < buffers.length; j++) {
             b = buffers[j];
             MoreSys.memcpyMemToMem(newListAddress + newListOffset,
