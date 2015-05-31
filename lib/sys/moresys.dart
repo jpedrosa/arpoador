@@ -52,6 +52,7 @@ class MoreSys {
   static const int SYS_STAT = 106; // 4 on x64. 106 on x86.
   static const int SYS_LSTAT = 107; // 6 on x64. 107 on x86.
   static const int SYS_GETDENTS = 141; // 78 on x64. 141 on x86.
+  static const int SYS_WRITE = 4; // 1 on x64. 4 on x86.
 
   static final _mkdir = Foreign.lookup("mkdir");
   static final _open = Foreign.lookup("open64");
@@ -316,19 +317,19 @@ class MoreSys {
     return i;
   }
 
-  static int printf(String string) {
-    Foreign cString = new Foreign.fromString(string);
-    int i = _printf.icall$1(cString);
-    cString.free();
-    return i;
-  }
-
   static int fflush([int stream = 0]) {
     return _fflush.icall$1(stream);
   }
 
   static int getdents(int fd, int bufferAddress, int bufferSize) {
     return _syscall.icall$4(SYS_GETDENTS, fd, bufferAddress, bufferSize);
+  }
+
+  static int print(String string) {
+    Foreign cString = new Foreign.fromString(string);
+    var i = _syscall.icall$4(SYS_WRITE, 1, cString, cString.length);
+    cString.free();
+    return i;
   }
 
   static void _rangeCheck(ByteBuffer buffer, int offset, int length) {

@@ -25,7 +25,7 @@ main() {
     sleep(100);
   }
   for (var i = 0; i < 100; i++) {
-    MoreSys.printf("fish.txt");
+    MoreSys.print("fish.txt");
     MoreSys.fflush();
     stdout.write("||");
     sleep(1000);
