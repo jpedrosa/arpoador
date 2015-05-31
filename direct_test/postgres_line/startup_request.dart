@@ -397,9 +397,11 @@ class PostgresClient {
     return offset;
   }
 
-  static final STRING_DATATYPE = 19;
   static final BOOLEAN_DATATYPE = 16;
+  static final STRING_DATATYPE = 19;
+  static final UINT32_2_DATATYPE = 23;
   static final TEXT_BLOB_DATATYPE = 25; // max size: 65535
+  static final UINT32_DATATYPE = 26;
 
   readFullMessageLength(messageLength, list, offset) {
     var newList, remainingLen = list.length - offset,
@@ -478,6 +480,9 @@ class PostgresClient {
           }
         } else if (dt == STRING_DATATYPE || dt == TEXT_BLOB_DATATYPE) {
           v = new String.fromCharCodes(list, offset, offset + valueLen);
+        } else if (dt == UINT32_DATATYPE || dt == UINT32_2_DATATYPE) {
+          v = int.parse(
+              new String.fromCharCodes(list, offset, offset + valueLen));
         } else if (dt == BOOLEAN_DATATYPE) {
           v = list[offset] == 116;
         } else {
@@ -500,6 +505,7 @@ class PostgresClient {
     if (c == 84) { // T for RowDescription.
       var qr = new QueryResults(), offset;
       offset = parseRowDescription(list, qr);
+      p(["fields", qr.fields]);
       if (offset < len) {
         if (list[offset] == 68) { // D for DataRow.
           parseDataRows(list, offset, qr);
@@ -601,6 +607,11 @@ genSampleQuery70() {
 }
 
 
+genSampleQuery80() {
+  return "select * from pg_description";
+}
+
+
 
 
 main() {
@@ -609,5 +620,5 @@ main() {
   //pc.connect(database: genLargeDatabaseName(65535 + 10));
   //pc.connect(database: genLargeDatabaseName(300));
   p(pc);
-  pc.query(genSampleQuery70());
+  pc.query(genSampleQuery80());
 }
