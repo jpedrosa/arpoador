@@ -13,10 +13,15 @@ genSampleQuery10() {
 }
 
 
+genSampleQuery20() {
+  return "  "; // Purposefully empty.
+}
+
+
 main() {
   var r, pc = new PostgresClient();
   pc.connect(address: "127.0.0.1", user: "postgres", database: "devel");
   p(pc);
-  r = pc.query(genSampleQuery1());
+  r = pc.query(genSampleQuery20());
   p(["results", r]);
 }

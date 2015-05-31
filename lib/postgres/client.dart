@@ -525,6 +525,8 @@ class PostgresClient {
       throw "ErrorResponse: ${inspect(parseFields(list))}";
     } else if (c == 67) { // C for CommandComplete.
       r = parseCommandComplete(list);
+    } else if (c == 73) { // I for EmptyQueryResponse.
+      throw "EmptyQueryResponse: the query included only spaces or was empty.";
     } else {
       throw "Unsupported for now.";
     }
