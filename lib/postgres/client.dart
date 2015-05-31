@@ -400,9 +400,11 @@ class PostgresClient {
 
   static final BOOLEAN_DATATYPE = 16;
   static final STRING_DATATYPE = 19;
-  static final INT_2_DATATYPE = 23;
+  static final INT_2_DATATYPE = 23; // Serial type at least.
   static final TEXT_BLOB_DATATYPE = 25; // max size: 65535
   static final INT_DATATYPE = 26;
+  static final STRING_2_DATATYPE = 1042; // Char type.
+  static final STRING_3_DATATYPE = 1043; // Varchar type.
 
   readFullMessageLength(messageLength, list, offset) {
     var newList, remainingLen = list.length - offset,
@@ -479,7 +481,8 @@ class PostgresClient {
           } else {
             throw "Unsupported negative value length.";
           }
-        } else if (dt == STRING_DATATYPE || dt == TEXT_BLOB_DATATYPE) {
+        } else if (dt == STRING_DATATYPE || dt == STRING_2_DATATYPE ||
+            dt == STRING_3_DATATYPE || dt == TEXT_BLOB_DATATYPE) {
           v = new String.fromCharCodes(list, offset, offset + valueLen);
         } else if (dt == INT_DATATYPE || dt == INT_2_DATATYPE) {
           v = int.parse(
