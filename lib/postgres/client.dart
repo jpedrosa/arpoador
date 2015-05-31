@@ -356,15 +356,16 @@ class PostgresClient {
     } catch (e) {
       throw "Failed to send the startup message.";
     }
-    readQueryResults();
+    return readQueryResults();
   }
 
   readQueryResults() {
-    var b = _socket.readNext();
+    var r, b = _socket.readNext();
     if (b != null) {
       p(["query results", b.asUint8List()]);
-      parseQueryResponse(b.asUint8List());
+      r = parseQueryResponse(b.asUint8List());
     }
+    return r;
   }
 
   findStringLength(address, len) {
@@ -506,27 +507,28 @@ class PostgresClient {
     if (len == 0) {
       throw "The query response is empty.";
     }
-    var c = list[0];
+    var r, c = list[0];
     if (c == 84) { // T for RowDescription.
-      var qr = new QueryResults(), offset;
-      offset = parseRowDescription(list, qr);
-      p(["fields", qr.fields]);
+      r = new QueryResults();
+      var offset = parseRowDescription(list, r);
+      p(["fields", r.fields]);
       if (offset < len) {
         if (list[offset] == 68) { // D for DataRow.
-          parseDataRows(list, offset, qr);
+          parseDataRows(list, offset, r);
         } else {
           throw "Unsupported for now.";
         }
       }
-      p(["qr", qr]);
-      p(["rows count", qr.rows.length]);
+      p(["qr", r]);
+      p(["rows count", r.rows.length]);
     } else if (c == 69) { // E for ErrorResponse.
       throw "ErrorResponse: ${inspect(parseFields(list))}";
     } else if (c == 67) { // C for CommandComplete.
-      parseCommandComplete(list);
+      r = parseCommandComplete(list);
     } else {
       throw "Unsupported for now.";
     }
+    return r;
   }
 
   /* End of Query section */

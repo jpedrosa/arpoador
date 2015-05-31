@@ -14,8 +14,9 @@ genSampleQuery10() {
 
 
 main() {
-  var pc = new PostgresClient();
+  var r, pc = new PostgresClient();
   pc.connect(address: "127.0.0.1", user: "postgres", database: "devel");
   p(pc);
-  pc.query(genSampleQuery1());
+  r = pc.query(genSampleQuery1());
+  p(["results", r]);
 }
