@@ -399,9 +399,9 @@ class PostgresClient {
 
   static final BOOLEAN_DATATYPE = 16;
   static final STRING_DATATYPE = 19;
-  static final UINT32_2_DATATYPE = 23;
+  static final INT_2_DATATYPE = 23;
   static final TEXT_BLOB_DATATYPE = 25; // max size: 65535
-  static final UINT32_DATATYPE = 26;
+  static final INT_DATATYPE = 26;
 
   readFullMessageLength(messageLength, list, offset) {
     var newList, remainingLen = list.length - offset,
@@ -480,7 +480,7 @@ class PostgresClient {
           }
         } else if (dt == STRING_DATATYPE || dt == TEXT_BLOB_DATATYPE) {
           v = new String.fromCharCodes(list, offset, offset + valueLen);
-        } else if (dt == UINT32_DATATYPE || dt == UINT32_2_DATATYPE) {
+        } else if (dt == INT_DATATYPE || dt == INT_2_DATATYPE) {
           v = int.parse(
               new String.fromCharCodes(list, offset, offset + valueLen));
         } else if (dt == BOOLEAN_DATATYPE) {
@@ -494,6 +494,11 @@ class PostgresClient {
       rows.add(row);
     } while (offset < len && list[offset] == 68); // D for another DataRow.
     queryResults.rows = rows;
+  }
+
+  parseCommandComplete(list) {
+    var len = getUint32(list, 1) - 4; // msgLen - 4
+    return new String.fromCharCodes(list, 5, len);
   }
 
   parseQueryResponse(list) {
@@ -517,6 +522,8 @@ class PostgresClient {
       p(["rows count", qr.rows.length]);
     } else if (c == 69) { // E for ErrorResponse.
       throw "ErrorResponse: ${inspect(parseFields(list))}";
+    } else if (c == 67) { // C for CommandComplete.
+      parseCommandComplete(list);
     } else {
       throw "Unsupported for now.";
     }
