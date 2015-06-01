@@ -40,6 +40,10 @@ class IO {
     File.open(filePath, 'w', (f) => f.writeBytes(bytes));
   }
 
+  static void writeBuffer(String filePath, ByteBuffer buffer) {
+    File.open(filePath, 'w', (f) => f.writeBuffer(buffer));
+  }
+
   static void popenReadLines(var command, fn(String string),
       [int lineLength = 80]) {
     PopenStream.readLines(command, fn, lineLength);

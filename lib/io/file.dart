@@ -92,7 +92,8 @@ class File {
   }
 
   writeBytes(List<int> bytes) {
-    MoreSys.write(_fd, FletchHelper.bytesToUint8List(bytes).buffer);
+    var b = FletchHelper.bytesToUint8List(bytes).buffer;
+    MoreSys.write(_fd, b, 0, b.lengthInBytes);
   }
 
   writeBuffer(ByteBuffer buffer, [int offset = 0, int length = -1]) {

@@ -3,6 +3,7 @@ import "dart:typed_data";
 import "../../lib/fletch_helper.dart";
 import "../../lib/lang.dart";
 import "../../lib/sys/moresys.dart";
+import "../../lib/io/io.dart";
 
 
 class FieldDescription {
@@ -259,6 +260,7 @@ class BuggyWheels {
     var b = _socket.readNext();
     if (b != null) {
       p(["xxx", b.asUint8List()]);
+      IO.writeBuffer("start_up_bytes", b);
       parseServerResponse(b.asUint8List());
     }
   }
