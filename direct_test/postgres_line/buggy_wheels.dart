@@ -1,9 +1,10 @@
-import "dart:io";
+//import "dart:io" as DIO;
 import "dart:typed_data";
 import "../../lib/fletch_helper.dart";
 import "../../lib/lang.dart";
 import "../../lib/sys/moresys.dart";
 import "../../lib/io/io.dart";
+import "../../lib/io/file.dart";
 
 
 class FieldDescription {
@@ -41,10 +42,12 @@ class BuggyWheels {
 
   var _socket, _connected = false, _list, _foreign, _parameters = const {},
     _processId = 0, _secretKey = 0, _backEndStatus = 0;
+    //_query_response_bytes_file;
 
   BuggyWheels() {
     _list = new Uint8List(4);
     _foreign = _list.buffer.getForeign();
+    //_query_response_bytes_file = File.open("query_response_bytes", "w");
   }
 
   /* Helper section */
@@ -78,13 +81,13 @@ class BuggyWheels {
   connect({String address: "", int port: 5432, String user: "",
       String password: "", String database: ""}) {
     try {
-      _socket = new Socket.connect(address, port);
+      //_socket = new DIO.Socket.connect(address, port);
     } catch (e) {
       throw "Failed to connect to address ${inspect(address)} "
           "on port ${port}.";
     }
     try {
-      _socket.write(prepareStartUpBuffer(user, database).buffer);
+      //_socket.write(prepareStartUpBuffer(user, database).buffer);
     } catch (e) {
       throw "Failed to send the startup message.";
     }
@@ -257,10 +260,11 @@ class BuggyWheels {
   }
 
   readStartUp() {
-    var b = _socket.readNext();
+    //var b = _socket.readNext();
+    var b = IO.readWholeBuffer("start_up_bytes");
     if (b != null) {
       p(["xxx", b.asUint8List()]);
-      IO.writeBuffer("start_up_bytes", b);
+      //IO.writeBuffer("start_up_bytes", b);
       parseServerResponse(b.asUint8List());
     }
   }
@@ -359,17 +363,19 @@ class BuggyWheels {
     copyStringToBuffer(list, 5, command);
     p(["query", list]);
     try {
-      _socket.write(list.buffer);
+      //_socket.write(list.buffer);
     } catch (e) {
-      throw "Failed to send the startup message.";
+      throw "Failed to send the query.";
     }
     return readQueryResults();
   }
 
   readQueryResults() {
-    var r, b = _socket.readNext();
+    var r, b = IO.readWholeBuffer("query_response_bytes");
+    //b = _socket.readNext();
     if (b != null) {
-      p(["query results", b.asUint8List()]);
+      //_query_response_bytes_file.writeBuffer(b);
+      //p(["query results", b.asUint8List()]);
       r = parseQueryResponse(b.asUint8List());
     }
     return r;
@@ -414,11 +420,13 @@ class BuggyWheels {
   static final STRING_3_DATATYPE = 1043; // Varchar type.
 
   readFullMessageLength(messageLength, list, offset) {
+    throw "should not happen.";
     var newList, remainingLen = list.length - offset,
       buffers = [], b, size = remainingLen;
     do {
       b = _socket.readNext();
       if (b != null) {
+        //_query_response_bytes_file.writeBuffer(b);
         buffers.add(b);
         size += b.lengthInBytes;
         if (size > messageLength) {
@@ -443,8 +451,10 @@ class BuggyWheels {
   }
 
   readMore(list, offset) {
+    throw "should not happen";
     var newList, b = _socket.readNext();
     if (b != null) {
+      //_query_response_bytes_file.writeBuffer(b);
       var remainingLen = list.length - offset;
       newList = new Uint8List(b.lengthInBytes + remainingLen);
       var newListAddress = newList.buffer.getForeign().value;
