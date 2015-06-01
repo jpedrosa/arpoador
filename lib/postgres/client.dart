@@ -168,6 +168,11 @@ class PostgresClient {
     return valueOffset + strLen + 1;
   }
 
+  /// One of the parameter status is the backend status that can be one
+  /// of these 3 values:
+  /// 73; I - Idle
+  /// 84; T - Transaction block
+  /// 69; E - Failed transaction block
   parseParameterStatus(list, offset) {
     if (offset + 5 < list.length) {
       // No need to parse the message length. So just skip it.
@@ -537,10 +542,6 @@ class PostgresClient {
   }
 
   /* End of Query section */
-
-  static final BACKEND_STATUS_I = 73; // I - Idle
-  static final BACKEND_STATUS_T = 84; // T - Transaction block
-  static final BACKEND_STATUS_E = 69; // E - Failed transaction block
 
   get isConnected => _connected;
 
