@@ -6,7 +6,7 @@ import "../../lib/sys/moresys.dart";
 main() {
   p(IO.readWholeBuffer("start_up_bytes").asUint8List());
   var list = IO.readWholeBuffer("query_response_bytes").asUint8List();
-  //print(list.toString());
+  print(list.toString());
   var nullCount = 0, c, sb = new StringBuffer(), len = list.length;
   sb.write(len > 0 ? "[${list[0]}" : "[");
   for (var i = 1; i < len; i++) {
