@@ -400,6 +400,7 @@ class PostgresClient {
 
   static final BOOLEAN_DATATYPE = 16;
   static final STRING_DATATYPE = 19;
+  static final UINT64_DATATYPE = 20; // Used in count(*) at least.
   static final INT_2_DATATYPE = 23; // Serial type at least.
   static final TEXT_BLOB_DATATYPE = 25; // max size: 65535
   static final INT_DATATYPE = 26;
@@ -484,7 +485,8 @@ class PostgresClient {
         } else if (dt == STRING_DATATYPE || dt == STRING_2_DATATYPE ||
             dt == STRING_3_DATATYPE || dt == TEXT_BLOB_DATATYPE) {
           v = new String.fromCharCodes(list, offset, offset + valueLen);
-        } else if (dt == INT_DATATYPE || dt == INT_2_DATATYPE) {
+        } else if (dt == INT_DATATYPE || dt == INT_2_DATATYPE ||
+            dt == UINT64_DATATYPE) {
           v = int.parse(
               new String.fromCharCodes(list, offset, offset + valueLen));
         } else if (dt == BOOLEAN_DATATYPE) {
