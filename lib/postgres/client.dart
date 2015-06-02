@@ -168,11 +168,6 @@ class PostgresClient {
     return valueOffset + strLen + 1;
   }
 
-  /// One of the parameter status is the backend status that can be one
-  /// of these 3 values:
-  /// 73; I - Idle
-  /// 84; T - Transaction block
-  /// 69; E - Failed transaction block
   parseParameterStatus(list, offset) {
     if (offset + 5 < list.length) {
       // No need to parse the message length. So just skip it.
@@ -199,7 +194,7 @@ class PostgresClient {
 
   parseReadyForQuery(list, offset) {
     if (offset + 5 < list.length) {
-      _backEndStatus = list[offset + 5];
+      _backEndStatus = new String.fromCharCode(list[offset + 5]);
     } else {
       throw "The BackendKeyData response was too short.";
     }
@@ -553,14 +548,11 @@ class PostgresClient {
 
   get backEndStatus => _backEndStatus;
 
-  get translatedBackEndStatus => _backEndStatus > 0 ?
-      new String.fromCharCode(_backEndStatus) : null;
-
   toString() {
     return "PostgresClient(connected: ${_connected}, "
         "parameters: ${inspect(_parameters)}, "
         "processId: ${_processId}, secretKey: ${_secretKey}, "
-        "translatedBackEndStatus: ${inspect(translatedBackEndStatus)})";
+        "backEndStatus: ${inspect(_backEndStatus)})";
   }
 
 }
