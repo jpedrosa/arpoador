@@ -1,6 +1,6 @@
 import "../../lib/io/io.dart";
 import "../../lib/lang.dart";
-import "dart:io" as DIO;
+import "dart:fletch.io" as DIO;
 
 
 main() {

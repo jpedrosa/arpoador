@@ -1,4 +1,4 @@
-//import "dart:io" as DIO;
+//import "dart:fletch.io" as DIO;
 import "dart:typed_data";
 import "../../lib/fletch_helper.dart";
 import "../../lib/lang.dart";

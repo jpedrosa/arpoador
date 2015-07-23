@@ -1,5 +1,5 @@
 import "dart:typed_data";
-import "dart:ffi";
+import "dart:fletch.ffi";
 import "../../lib/sys/moresys.dart";
 import "../../lib/lang.dart";
 

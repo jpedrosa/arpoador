@@ -2,7 +2,7 @@ import "dart:typed_data";
 import "../../lib/sys/moresys.dart";
 import "../../lib/lang.dart";
 import "../../lib/io/io.dart";
-import "dart:io";
+import "dart:fletch.io";
 
 
 pad(i) {

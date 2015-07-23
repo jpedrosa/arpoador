@@ -1,7 +1,7 @@
 library moresys;
 
-import "dart:ffi";
-import "dart:io";
+import "dart:fletch.ffi";
+import "dart:fletch.io";
 import "dart:typed_data";
 import "../../lib/lang.dart";
 

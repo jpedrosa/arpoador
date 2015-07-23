@@ -1,4 +1,4 @@
-import "dart:io";
+import "dart:fletch.io";
 import "dart:typed_data";
 import "../../lib/fletch_helper.dart";
 import "../../lib/lang.dart";
