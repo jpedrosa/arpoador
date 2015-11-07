@@ -1,7 +1,7 @@
 library moresys;
 
 import "dart:fletch.ffi";
-import "dart:fletch.io";
+import "package:os/os.dart";
 import "dart:typed_data";
 import "../../lib/lang.dart";
 
@@ -54,32 +54,34 @@ class MoreSys {
   static const int SYS_GETDENTS = 141; // 78 on x64. 141 on x86.
   static const int SYS_WRITE = 4; // 1 on x64. 4 on x86.
 
-  static final _mkdir = Foreign.lookup("mkdir");
-  static final _open = Foreign.lookup("open64");
-  static final _close = Foreign.lookup("close");
-  static final _write = Foreign.lookup("write");
-  static final _read = Foreign.lookup("read");
-  static final _lseek = Foreign.lookup("lseek64");
-  static final _memcpy = Foreign.lookup("memcpy");
-  static final _opendir = Foreign.lookup("opendir");
-  static final _readdir = Foreign.lookup("readdir");
-  static final _closedir = Foreign.lookup("closedir");
-  static final _popen = Foreign.lookup("popen");
-  static final _fgets = Foreign.lookup("fgets");
-  static final _pclose = Foreign.lookup("pclose");
-  static final _memchr = Foreign.lookup("memchr");
-  static final _rawmemchr = Foreign.lookup("rawmemchr");
-  static final _getenv = Foreign.lookup("getenv");
-  static final _syscall = Foreign.lookup("syscall");
-  static final _unlink = Foreign.lookup("unlink");
-  static final _getpid = Foreign.lookup("getpid");
-  static final _getcwd = Foreign.lookup("getcwd");
-  static final _rename = Foreign.lookup("rename");
-  static final _printf = Foreign.lookup("printf");
-  static final _fflush = Foreign.lookup("fflush");
+  static doLookup(functionName) => ForeignLibrary.main.lookup(functionName);
+
+  static final _mkdir = doLookup("mkdir");
+  static final _open = doLookup("open64");
+  static final _close = doLookup("close");
+  static final _write = doLookup("write");
+  static final _read = doLookup("read");
+  static final _lseek = doLookup("lseek64");
+  static final _memcpy = doLookup("memcpy");
+  static final _opendir = doLookup("opendir");
+  static final _readdir = doLookup("readdir");
+  static final _closedir = doLookup("closedir");
+  static final _popen = doLookup("popen");
+  static final _fgets = doLookup("fgets");
+  static final _pclose = doLookup("pclose");
+  static final _memchr = doLookup("memchr");
+  static final _rawmemchr = doLookup("rawmemchr");
+  static final _getenv = doLookup("getenv");
+  static final _syscall = doLookup("syscall");
+  static final _unlink = doLookup("unlink");
+  static final _getpid = doLookup("getpid");
+  static final _getcwd = doLookup("getcwd");
+  static final _rename = doLookup("rename");
+  static final _printf = doLookup("printf");
+  static final _fflush = doLookup("fflush");
 
   static mkdir(String dirPath, [int mode = DEFAULT_DIR_MODE]) {
-    var cPath = new Foreign.fromString(dirPath);
+    var cPath = new ForeignMemory.fromStringAsUTF8(dirPath);
     var i = _retry(() => _mkdir.icall$2(cPath, mode));
     cPath.free();
     if (i == -1) {
@@ -88,7 +90,7 @@ class MoreSys {
   }
 
   static int open(String path, int flags, [int mode]) {
-    Foreign cPath = new Foreign.fromString(path);
+    ForeignMemory cPath = new ForeignMemory.fromStringAsUTF8(path);
     int fd;
     if (mode == null) {
       fd = _retry(() => _open.icall$2(cPath, flags));
@@ -112,14 +114,14 @@ class MoreSys {
       throw "Unexpected operation when opening file.";
     }
     flags |= O_CLOEXEC;
-    Foreign cPath = new Foreign.fromString(filePath);
+    ForeignMemory cPath = new ForeignMemory.fromStringAsUTF8(filePath);
     int fd = _retry(() => _open.icall$3(cPath, flags, mode));
     cPath.free();
     return fd;
   }
 
   static int doOpenDir(String dirPath) {
-    Foreign cPath = new Foreign.fromString(dirPath);
+    ForeignMemory cPath = new ForeignMemory.fromStringAsUTF8(dirPath);
     int fd = _retry(() => _open.icall$2(cPath, O_RDONLY | O_DIRECTORY));
     cPath.free();
     return fd;
@@ -131,20 +133,20 @@ class MoreSys {
 
   static int write(int fd, var buffer, int offset, int length) {
     _rangeCheck(buffer, offset, length);
-    var address = buffer.getForeign().value + offset;
+    var address = buffer.getForeign().address + offset;
     return _retry(() => _write.icall$3(fd, address, length));
   }
 
   static int writeString(int fd, String string) {
-    Foreign cPath = new Foreign.fromString(string);
-    var i = _retry(() => _write.icall$3(fd, cPath.value, cPath.length));
+    ForeignMemory cPath = new ForeignMemory.fromStringAsUTF8(string);
+    var i = _retry(() => _write.icall$3(fd, cPath.address, cPath.length));
     cPath.free();
     return i;
   }
 
   static int read(int fd, var buffer, int offset, int length) {
     _rangeCheck(buffer, offset, length);
-    var address = buffer.getForeign().value + offset;
+    var address = buffer.getForeign().address + offset;
     return _retry(() => _read.icall$3(fd, address, length));
   }
 
@@ -157,8 +159,8 @@ class MoreSys {
               var src,
               int srcOffset,
               int length) {
-    var destAddress = dest.getForeign().value + destOffset;
-    var srcAddress = src.getForeign().value + srcOffset;
+    var destAddress = dest.getForeign().address + destOffset;
+    var srcAddress = src.getForeign().address + srcOffset;
     _memcpy.icall$3(destAddress, srcAddress, length);
   }
 
@@ -176,7 +178,7 @@ class MoreSys {
   }
 
   static int opendir(String dirPath) {
-    Foreign cPath = new Foreign.fromString(dirPath);
+    ForeignMemory cPath = new ForeignMemory.fromStringAsUTF8(dirPath);
     int dirp = _opendir.icall$1(cPath);
     cPath.free();
     return dirp;
@@ -187,8 +189,8 @@ class MoreSys {
   }
 
   static int popen(String command, [String operation = "r"]) {
-    Foreign cCommand = new Foreign.fromString(command);
-    Foreign cOperation = new Foreign.fromString(operation);
+    ForeignMemory cCommand = new ForeignMemory.fromStringAsUTF8(command);
+    ForeignMemory cOperation = new ForeignMemory.fromStringAsUTF8(operation);
     int fp = _popen.icall$2(cCommand, cOperation);
     cCommand.free();
     cOperation.free();
@@ -196,7 +198,7 @@ class MoreSys {
   }
 
   static int fgets(var buffer, int length, int fp) {
-    return _fgets.icall$3(buffer.getForeign().value, length, fp);
+    return _fgets.icall$3(buffer.getForeign().address, length, fp);
   }
 
   static int pclose(int fp) {
@@ -212,13 +214,13 @@ class MoreSys {
   }
 
   static String getenv(String name) {
-    Foreign cName = new Foreign.fromString(name);
+    ForeignMemory cName = new ForeignMemory.fromStringAsUTF8(name);
     var s, i = _getenv.icall$1(cName);
     cName.free();
     if (i != 0) {
       var n = _rawmemchr.icall$2(i, 0),
         list = new Uint8List(n - i);
-      _memcpy.icall$3(list.buffer.getForeign().value, i, n - i);
+      _memcpy.icall$3(list.buffer.getForeign().address, i, n - i);
       s = new String.fromCharCodes(list);
     }
     return s;
@@ -226,18 +228,19 @@ class MoreSys {
 
   static get environment {
     // Navigate the pointer maze.
-    var h = {}, envAddress = Foreign.lookup("environ").value, j = 0, tf, sp,
+    var h = {}, envAddress = doLookup("environ").address, j = 0, tf, sp,
       firstByteAddress, list = new Uint8List(1024),
-      listAddress = list.buffer.getForeign().value,
-      firstItemAddress = new Foreign.fromAddress(envAddress, 4).getUint32(0),
+      listAddress = list.buffer.getForeign().address,
+      firstItemAddress =
+          new ForeignMemory.fromAddress(envAddress, 4).getUint32(0),
       equalCharAddress, valueAddress, stringEndAddress,
       keyLen, key, valueLen;
     while (true) {
-      sp = new Foreign.fromAddress(firstItemAddress + j, 4).getUint32(0);
+      sp = new ForeignMemory.fromAddress(firstItemAddress + j, 4).getUint32(0);
       if (sp == 0) {
         break;
       }
-      tf = new Foreign.fromAddress(sp, 20);
+      tf = new ForeignMemory.fromAddress(sp, 20);
       // Workaround. We take the first byte address to sort of normalize
       // the integer value or memory address value, otherwise during the
       // conversion from machine to Dart integer there could be some kind
@@ -251,14 +254,14 @@ class MoreSys {
       keyLen = equalCharAddress - firstByteAddress;
       if (keyLen > list.length) {
         list = new Uint8List(keyLen);
-        listAddress = list.buffer.getForeign().value;
+        listAddress = list.buffer.getForeign().address;
       }
       _memcpy.icall$3(listAddress, sp, keyLen);
       key = new String.fromCharCodes(list, 0, keyLen);
       valueLen = stringEndAddress - valueAddress;
       if (valueLen > list.length) {
         list = new Uint8List(valueLen);
-        listAddress = list.buffer.getForeign().value;
+        listAddress = list.buffer.getForeign().address;
       }
       _memcpy.icall$3(listAddress, valueAddress, valueLen);
       h[key] = new String.fromCharCodes(list, 0, valueLen);
@@ -276,11 +279,11 @@ class MoreSys {
   }
 
   static int doStat(int sysStat, String path, int bufferAddress) {
-    Foreign cPath = new Foreign.fromString(path);
+    ForeignMemory cPath = new ForeignMemory.fromStringAsUTF8(path);
     if (bufferAddress == 0) {
       // sizeof of the stat struct shows 144. We give it some room.
       var list = new Uint8List(180);
-      bufferAddress = list.buffer.getForeign().value;
+      bufferAddress = list.buffer.getForeign().address;
     }
     int i = _syscall.icall$3(sysStat, cPath, bufferAddress);
     cPath.free();
@@ -288,7 +291,7 @@ class MoreSys {
   }
 
   static int unlink(String path) {
-    Foreign cPath = new Foreign.fromString(path);
+    ForeignMemory cPath = new ForeignMemory.fromStringAsUTF8(path);
     int i = _unlink.icall$1(cPath);
     cPath.free();
     return i;
@@ -300,7 +303,7 @@ class MoreSys {
 
   static String getcwd() {
     var list = new Uint8List(255), foreign = list.buffer.getForeign();
-    var s, i = _getcwd.icall$2(foreign.value, 255);
+    var s, i = _getcwd.icall$2(foreign.address, 255);
     if (i != 0) {
       var n = _memchr.icall$3(i, 0, 255);
       s = new String.fromCharCodes(list, 0, n - i);
@@ -309,8 +312,8 @@ class MoreSys {
   }
 
   static int rename(String oldPath, String newPath) {
-    Foreign cOldPath = new Foreign.fromString(oldPath);
-    Foreign cNewPath = new Foreign.fromString(newPath);
+    ForeignMemory cOldPath = new ForeignMemory.fromStringAsUTF8(oldPath);
+    ForeignMemory cNewPath = new ForeignMemory.fromStringAsUTF8(newPath);
     int i = _rename.icall$2(cOldPath, cNewPath);
     cOldPath.free();
     cNewPath.free();
@@ -326,7 +329,7 @@ class MoreSys {
   }
 
   static int print(String string) {
-    Foreign cString = new Foreign.fromString(string);
+    ForeignMemory cString = new ForeignMemory.fromStringAsUTF8(string);
     var i = _syscall.icall$4(SYS_WRITE, 1, cString, cString.length);
     cString.free();
     return i;

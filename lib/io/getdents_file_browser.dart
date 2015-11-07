@@ -13,7 +13,7 @@ class GetdentsFileBrowser {
     if (fd != -1) {
       try {
         var len, i, reclen, list = new Uint8List(2048),
-          foreign = list.buffer.getForeign(), address = foreign.value;
+          foreign = list.buffer.getForeign(), address = foreign.address;
         do {
           len = MoreSys.getdents(fd, address, 2048);
           if (len <= 0) {

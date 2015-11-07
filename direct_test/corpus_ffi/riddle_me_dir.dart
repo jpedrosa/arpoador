@@ -8,7 +8,7 @@ main() {
   var dir = MoreSys.opendir("/home/dewd/t_/jungle");
   var foreign, n = MoreSys.readdir(dir);
   while (n > 0) {
-    foreign = new Foreign.fromAddress(n, 280);
+    foreign = new ForeignMemory.fromAddress(n, 280);
     p("ino: ${foreign.getUint32(0)}");
     p("type: ${foreign.getUint8(10)}");
     var c, a = [], s;

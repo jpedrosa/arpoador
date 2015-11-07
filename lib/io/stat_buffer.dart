@@ -16,11 +16,11 @@ class StatBuffer {
   }
 
   bool stat(String path) {
-    return MoreSys.stat(path, _bufferForeign.value) == 0;
+    return MoreSys.stat(path, _bufferForeign.address) == 0;
   }
 
   bool lstat(String path) {
-    return MoreSys.lstat(path, _bufferForeign.value) == 0;
+    return MoreSys.lstat(path, _bufferForeign.address) == 0;
   }
 
   int get dev => _bufferForeign.getUint32(0);
